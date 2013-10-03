@@ -1,0 +1,17 @@
+{
+  "name": "node-music-library-index",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --reporter spec test/test.js"
+  },
+  "author": "",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "diacritics": "~1.0.1"
+  },
+  "devDependencies": {
+    "mocha": "~1.13.0"
+  }
+}

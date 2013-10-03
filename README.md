@@ -1,0 +1,54 @@
+# Music Library Index
+
+Given track metadata objects, constructs a searchable object model with these
+properties:
+
+ * Sort order ignores 'a', 'an' and 'the' in artists, albums, and names.
+ * Sorting and searching is case insensitive and
+   [diacritics-insensitive](https://github.com/superjoe30/diacritics).
+ * Searching uses word-based filtering (this is how most music player
+   applications implement filtering) on all track fields.
+ * Distinguishes albums by name, date, and album artist.
+ * Produces these indexes:
+   * Artists in sorted order
+     - For each of these artists, albums in sorted order.
+       - For each of these albums, tracks in sorted order.
+   * Albums in sorted order
+     - For each of these albums, tracks in sorted order.
+   * Tracks by user-defined key.
+   * Artists by library-defined key.
+   * Albums by library-defined key.
+
+## Usage
+
+```js
+var MusicLibraryIndex = require('music-library-index');
+var library = new MusicLibraryIndex();
+
+library.addTrack({
+  key: "Anberlin/Never Take Friendship Personal/02. Paperthin Hymn.mp3",
+  name: "Paperthin Hymn",
+  artistName: "Anberlin",
+  albumName: "Never Take Friendship Personal",
+  year: 2005,
+  genre: "Other",
+  track: 2,
+  albumArtistName: "Anberlin",
+});
+
+library.addTrack({
+  key: "Anberlin/Never Take Friendship Personal/08. The Feel Good Drag.mp3",
+  name: "The Feel Good Drag",
+  artistName: "Anberlin",
+  albumName: "Never Take Friendship Personal",
+  year: 2005,
+  genre: "Other",
+  track: 8,
+  albumArtistName: "Anberlin",
+});
+
+library.rebuild();
+
+console.log(library.artistList[0]);
+console.log(library.trackTable);
+```
