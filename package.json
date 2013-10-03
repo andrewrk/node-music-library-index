@@ -1,17 +1,24 @@
 {
-  "name": "node-music-library-index",
+  "name": "music-library-index",
   "version": "0.0.0",
-  "description": "",
+  "description": "build a searchable javascript object model given track metadata objects",
   "main": "index.js",
   "scripts": {
     "test": "mocha --reporter spec test/test.js"
   },
-  "author": "",
+  "author": "Andrew Kelley <superjoe30@gmail.com>",
   "license": "BSD-2-Clause",
   "dependencies": {
     "diacritics": "~1.0.1"
   },
   "devDependencies": {
     "mocha": "~1.13.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/superjoe30/node-music-library-index.git"
+  },
+  "bugs": {
+    "url": "https://github.com/superjoe30/node-music-library-index/issues"
   }
 }

@@ -1,7 +1,10 @@
 # Music Library Index
 
-Given track metadata objects, constructs a searchable object model with these
-properties:
+Given track metadata objects, constructs a searchable object model.
+This module is used both in the client and the server of
+[Groove Basin](https://github.com/superjoe30/groovebasin).
+
+## Features
 
  * Sort order ignores 'a', 'an' and 'the' in artists, albums, and names.
  * Sorting and searching is case insensitive and
@@ -52,3 +55,4 @@ library.rebuild();
 console.log(library.artistList[0]);
 console.log(library.trackTable);
 ```
+
