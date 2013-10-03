@@ -99,9 +99,11 @@ MusicLibraryIndex.prototype.clear = function() {
   this.artistList = [];
   this.albumTable = {};
   this.albumList = [];
+  this.dirty = false;
 };
 
 MusicLibraryIndex.prototype.rebuild = function() {
+  if (!this.dirty) return;
   // builds everything from trackTable
   this.artistTable = {};
   this.artistList = [];
@@ -180,6 +182,7 @@ MusicLibraryIndex.prototype.rebuild = function() {
     artist.index = i;
   }
 
+  this.dirty = false;
 
   function createAlbum() {
     var album = {
@@ -203,10 +206,12 @@ MusicLibraryIndex.prototype.rebuild = function() {
 
 MusicLibraryIndex.prototype.addTrack = function(track) {
   this.trackTable[track.key] = track;
+  this.dirty = true;
 }
 
 MusicLibraryIndex.prototype.removeTrack = function(key) {
   delete this.trackTable[key];
+  this.dirty = true;
 }
 
 MusicLibraryIndex.prototype.search = function(query) {
