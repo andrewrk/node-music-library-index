@@ -67,7 +67,7 @@ describe("basic index building", function() {
   });
 });
 
-describe("comilation album", function() {
+describe("compilation album", function() {
   var library = new MusicLibraryIndex();
 
   library.addTrack({
@@ -129,6 +129,10 @@ describe("comilation album", function() {
     assert.strictEqual(artist.name, "Various Artists");
     assert.strictEqual(artist.albumList.length, 2);
     assert.strictEqual(library.albumList.length, 2);
+    assert.strictEqual(library.trackTable["jqvq-tpiu"].albumArtistName, "Various Artists");
+    assert.strictEqual(library.trackTable["dldd-itve"].albumArtistName, "Various Artists");
+    assert.strictEqual(library.trackTable["ukjv-ndsz"].albumArtistName, "Various Artists");
+    assert.strictEqual(library.trackTable["gfkt-esqz"].albumArtistName, "Various Artists");
   });
 });
 

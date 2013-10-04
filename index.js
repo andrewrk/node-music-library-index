@@ -151,7 +151,8 @@ MusicLibraryIndex.prototype.rebuild = function() {
       artistKey = this.variousArtistsKey;
       for (i = 0; i < album.trackList.length; i += 1) {
         track = album.trackList[i];
-        track.artistDisambiguation = track.artistName;
+        track.compilation = true;
+        track.albumArtistName = this.variousArtistsName;
       }
     } else {
       artistKey = this.getArtistKey(albumArtistName);
