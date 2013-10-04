@@ -66,3 +66,173 @@ describe("basic index building", function() {
     assert.strictEqual(album.trackList[1].index, 1);
   });
 });
+
+describe("comilation album", function() {
+  var library = new MusicLibraryIndex();
+
+  library.addTrack({
+    key: "jqvq-tpiu",
+    name: "No News Is Good News",
+    artistName: "New Found Glory",
+    albumName: "2004 Warped Tour Compilation [Disc 1]",
+    year: 2004,
+    disc: 1,
+    discCount: 2,
+    genre: "Alternative & Punk",
+    albumArtistName: "Various Artists",
+    track: 1,
+  });
+
+  library.addTrack({
+    key: "dldd-itve",
+    name: "American Errorist (I Hate Hate Haters)",
+    artistName: "NOFX",
+    albumName: "2004 Warped Tour Compilation [Disc 1]",
+    year: 2004,
+    disc: 1,
+    discCount: 2,
+    genre: "Alternative & Punk",
+    albumArtistName: "Various Artists",
+    track: 2,
+  });
+
+  library.addTrack({
+    key: "ukjv-ndsz",
+    name: "Fire Down Below",
+    artistName: "Alkaline Trio",
+    albumName: "2007 Warped Tour Compilation [Disc 1]",
+    compilation: true,
+    year: 2007,
+    genre: "Alternative & Punk",
+    track: 1,
+    trackCount: 25,
+  });
+
+  library.addTrack({
+    key: "gfkt-esqz",
+    name: "Requiem For Dissent",
+    artistName: "Bad Religion",
+    albumName: "2007 Warped Tour Compilation [Disc 1]",
+    compilation: true,
+    year: 2007,
+    genre: "Alternative & Punk",
+    track: 2,
+    trackCount: 25,
+  });
+
+  library.rebuild();
+
+  it("filed in various artists", function() {
+    assert.strictEqual(library.albumList.length, 2);
+    assert.strictEqual(library.artistList.length, 1);
+    var artist = library.artistList[0];
+    assert.strictEqual(artist.name, "Various Artists");
+    assert.strictEqual(artist.albumList.length, 2);
+    assert.strictEqual(library.albumList.length, 2);
+  });
+});
+
+describe("tracks from same album missing year metadata", function() {
+  var library = new MusicLibraryIndex();
+
+  library.addTrack({
+    key: "wwxj-unhr",
+    name: "Dog-Eared Page",
+    artistName: "The Matches",
+    albumName: "E. Von Dahl Killed the Locals",
+    year: 2004,
+    genre: "Punk",
+    track: 1,
+  });
+
+  library.addTrack({
+    key: "xekw-lvne",
+    name: "Audio Blood",
+    artistName: "The Matches",
+    albumName: "E. Von Dahl Killed the Locals",
+    // missing year
+    genre: "Rock",
+    track: 2,
+  });
+
+  library.addTrack({
+    key: "lpka-dugc",
+    name: "Chain Me Free",
+    artistName: "The Matches",
+    albumName: "E. Von Dahl Killed the Locals",
+    year: 2004,
+    genre: "Rock",
+    track: 3,
+  });
+
+  library.rebuild();
+
+  it("still knows they're in the same album", function() {
+    assert.strictEqual(library.albumList.length, 1);
+    assert.strictEqual(library.albumList[0].year, 2004);
+    assert.strictEqual(library.trackTable["xekw-lvne"].album.year, 2004);
+  });
+});
+
+describe("different albums with same name", function() {
+  var library = new MusicLibraryIndex();
+
+  library.addTrack({
+    key: "sbao-lcvn",
+    name: "6:00",
+    artistName: "Dream Theater",
+    albumName: "Awake",
+    year: 1994,
+    genre: "Progressive Rock",
+    track: 1,
+  });
+
+  library.addTrack({
+    key: "qtru-gdtp",
+    name: "Awake",
+    artistName: "Godsmack",
+    albumName: "Awake",
+    year: 2000,
+    genre: "Rock",
+    track: 2,
+  });
+
+  library.rebuild();
+
+  it("detects that they are different", function() {
+    assert.strictEqual(library.albumList.length, 2);
+  });
+});
+
+describe("album with a few tracks by different artists", function() {
+  var library = new MusicLibraryIndex();
+
+  library.addTrack({
+    key: "ikoe-nujf",
+    name: "Paperthin Hymn",
+    artistName: "Anberlin",
+    albumArtistName: "Anberlin",
+    albumName: "Never Take Friendship Personal",
+    year: 2005,
+    genre: "Other",
+    track: 2,
+  });
+
+  library.addTrack({
+    key: "msnq-swpc",
+    name: "The Feel Good Drag",
+    artistName: "Anberlin, some other band",
+    albumArtistName: "Anberlin",
+    albumName: "Never Take Friendship Personal",
+    year: 2005,
+    genre: "Other",
+    track: 8,
+  });
+
+
+  library.rebuild();
+
+  it("only creates one album", function() {
+    assert.strictEqual(library.albumList.length, 1);
+  });
+});
