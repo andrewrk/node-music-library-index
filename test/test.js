@@ -65,6 +65,14 @@ describe("basic index building", function() {
     assert.strictEqual(album.trackList[1].name, "The Feel Good Drag");
     assert.strictEqual(album.trackList[1].index, 1);
   });
+
+  it("searching", function() {
+    var results = library.search("never drag");
+
+    assert.strictEqual(results.albumList.length, 1);
+    assert.strictEqual(results.albumList[0].trackList.length, 1);
+    assert.strictEqual(results.albumList[0].trackList[0].name, "The Feel Good Drag");
+  });
 });
 
 describe("compilation album", function() {

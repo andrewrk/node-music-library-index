@@ -56,3 +56,24 @@ console.log(library.artistList[0]);
 console.log(library.trackTable);
 ```
 
+## Tests
+
+```
+  basic index building
+    ✓ trackTable 
+    ✓ artistList 
+    ✓ albumList 
+    ✓ searching 
+
+  compilation album
+    ✓ filed in various artists 
+
+  tracks from same album missing year metadata
+    ✓ still knows they're in the same album 
+
+  different albums with same name
+    ✓ detects that they are different 
+
+  album with a few tracks by different artists
+    ✓ only creates one album 
+```

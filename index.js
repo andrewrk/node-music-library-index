@@ -114,10 +114,11 @@ MusicLibraryIndex.prototype.rebuild = function() {
     track = this.trackTable[trackKey];
     this.trackTable[track.key] = track;
 
-    track.searchTags = "";
+    var searchTags = "";
     for (i = 0; i < this.searchFields.length; i += 1) {
-      track.searchTags += track[this.searchFields[i]] + "\n";
+      searchTags += track[this.searchFields[i]] + "\n";
     }
+    track.searchTags = formatSearchable(searchTags);
 
     track.albumArtistName = track.albumArtistName || "";
 
@@ -240,6 +241,8 @@ MusicLibraryIndex.prototype.search = function(query) {
     }
   }
   searchResults.rebuild();
+
+  return searchResults;
 
   function testMatch() {
     for (var i = 0; i < words.length; i += 1) {
