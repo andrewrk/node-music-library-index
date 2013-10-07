@@ -145,6 +145,7 @@ MusicLibraryIndex.prototype.rebuild = function() {
         albumArtistName = track.albumArtistName;
         albumArtistSet[this.getArtistKey(albumArtistName)] = true;
       }
+      if (!albumArtistName) albumArtistName = track.artistName;
       albumArtistSet[this.getArtistKey(track.artistName)] = true;
     }
     if (moreThanOneKey(albumArtistSet)) {

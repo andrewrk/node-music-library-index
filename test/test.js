@@ -248,3 +248,33 @@ describe("album with a few tracks by different artists", function() {
     assert.strictEqual(library.albumList.length, 1);
   });
 });
+
+describe("album by an artist", function() {
+  var library = new MusicLibraryIndex();
+
+  library.addTrack({
+    key: "ynji-lcfu",
+    name: "The Truth",
+    artistName: "Relient K",
+    albumName: "Apathetic ep",
+    track: 1,
+    trackCount: 7,
+  });
+
+  library.addTrack({
+    key: "lxed-bsor",
+    name: "Apathetic Way to Be",
+    artistName: "Relient K",
+    albumName: "Apathetic ep",
+    track: 2,
+    trackCount: 7,
+  });
+
+
+  library.rebuild();
+
+  it("should be filed under the artist", function() {
+    assert.strictEqual(library.artistList.length, 1);
+    assert.strictEqual(library.artistList[0].name, "Relient K");
+  });
+});
