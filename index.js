@@ -98,41 +98,61 @@ MusicLibraryIndex.prototype.clear = function() {
   this.albumTable = {};
   this.albumList = [];
   this.dirty = false;
+  this.dirtyAlbumTable = false;
 };
 
-MusicLibraryIndex.prototype.rebuild = function() {
-  if (!this.dirty) return;
+MusicLibraryIndex.prototype.rebuildAlbumTable = function() {
+  if (!this.dirtyAlbumTable) return;
+
   // builds everything from trackTable
   this.artistTable = {};
   this.artistList = [];
   this.albumTable = {};
   this.albumList = [];
   var thisAlbumList = this.albumList;
-  var albumKey, album, trackKey, track;
-  var i;
-  for (trackKey in this.trackTable) {
-    track = this.trackTable[trackKey];
+  for (var trackKey in this.trackTable) {
+    var track = this.trackTable[trackKey];
     this.trackTable[track.key] = track;
 
     var searchTags = "";
-    for (i = 0; i < this.searchFields.length; i += 1) {
+    for (var i = 0; i < this.searchFields.length; i += 1) {
       searchTags += track[this.searchFields[i]] + "\n";
     }
     track.searchTags = formatSearchable(searchTags);
 
     track.albumArtistName = track.albumArtistName || "";
 
-    albumKey = this.getAlbumKey(track);
-    album = getOrCreate(albumKey, this.albumTable, createAlbum);
+    var albumKey = this.getAlbumKey(track);
+    var album = getOrCreate(albumKey, this.albumTable, createAlbum);
     track.album = album;
     album.trackList.push(track);
     if (album.year == null) {
       album.year = track.year;
     }
   }
+
+  this.dirtyAlbumTable = false;
+
+  function createAlbum() {
+    var album = {
+      name: track.albumName,
+      year: track.year,
+      trackList: [],
+      key: albumKey,
+    };
+    thisAlbumList.push(album);
+    return album;
+  }
+};
+
+MusicLibraryIndex.prototype.rebuild = function() {
+  if (!this.dirty) return;
+  this.rebuildAlbumTable();
   this.albumList.sort(this.albumComparator);
 
   var albumArtistName, artistKey, artist;
+  var albumKey, track, album;
+  var i;
   for (albumKey in this.albumTable) {
     album = this.albumTable[albumKey];
     var albumArtistSet = {};
@@ -190,17 +210,6 @@ MusicLibraryIndex.prototype.rebuild = function() {
 
   this.dirty = false;
 
-  function createAlbum() {
-    var album = {
-      name: track.albumName,
-      year: track.year,
-      trackList: [],
-      key: albumKey,
-    };
-    thisAlbumList.push(album);
-    return album;
-  }
-
   function createArtist() {
     return {
       name: albumArtistName,
@@ -220,12 +229,14 @@ MusicLibraryIndex.prototype.addTrack = function(track) {
       oldTrack.track !== track.track ||
       oldTrack.disc !== track.disc ||
       oldTrack.year !== track.year;
+  this.dirtyAlbumTable = this.dirty;
   this.trackTable[track.key] = track;
 }
 
 MusicLibraryIndex.prototype.removeTrack = function(key) {
   delete this.trackTable[key];
   this.dirty = true;
+  this.dirtyAlbumTable = true;
 }
 
 MusicLibraryIndex.prototype.search = function(query) {
@@ -250,6 +261,7 @@ MusicLibraryIndex.prototype.search = function(query) {
     }
   }
   searchResults.dirty = true;
+  searchResults.dirtyAlbumTable = true;
   searchResults.rebuild();
 
   return searchResults;
