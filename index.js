@@ -211,8 +211,16 @@ MusicLibraryIndex.prototype.rebuild = function() {
 }
 
 MusicLibraryIndex.prototype.addTrack = function(track) {
+  var oldTrack = this.trackTable[track.key];
+  this.dirty = this.dirty ||
+      oldTrack == null ||
+      oldTrack.artistName !== track.artistName ||
+      oldTrack.albumArtistName !== track.albumArtistName ||
+      oldTrack.albumName !== track.albumName ||
+      oldTrack.track !== track.track ||
+      oldTrack.disc !== track.disc ||
+      oldTrack.year !== track.year;
   this.trackTable[track.key] = track;
-  this.dirty = true;
 }
 
 MusicLibraryIndex.prototype.removeTrack = function(key) {
@@ -238,9 +246,10 @@ MusicLibraryIndex.prototype.search = function(query) {
   for (var trackKey in this.trackTable) {
     track = this.trackTable[trackKey];
     if (testMatch()) {
-      searchResults.addTrack(track);
+      searchResults.trackTable[track.key] = track;
     }
   }
+  searchResults.dirty = true;
   searchResults.rebuild();
 
   return searchResults;
