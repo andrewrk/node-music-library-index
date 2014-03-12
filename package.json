@@ -1,6 +1,6 @@
 {
   "name": "music-library-index",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "description": "build a searchable javascript object model given track metadata objects",
   "main": "index.js",
   "scripts": {
