@@ -58,7 +58,11 @@ MusicLibraryIndex.prototype.titleCompare = function(a, b) {
 };
 
 MusicLibraryIndex.prototype.trackComparator = function(a, b) {
-  if (a.track < b.track) {
+  if (a.disc < b.disc) {
+    return -1;
+  } else if (a.disc > b.disc) {
+    return 1;
+  } else if (a.track < b.track) {
     return -1;
   } else if (a.track > b.track) {
     return 1;

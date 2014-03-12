@@ -278,3 +278,67 @@ describe("album by an artist", function() {
     assert.strictEqual(library.artistList[0].name, "Relient K");
   });
 });
+
+describe("album by an artist", function() {
+  var library = new MusicLibraryIndex();
+  library.addTrack({
+    key: "jqvq-tpiu",
+    name: "No News Is Good News",
+    artistName: "New Found Glory",
+    albumName: "2004 Warped Tour Compilation",
+    year: 2004,
+    disc: 1,
+    discCount: 2,
+    genre: "Alternative & Punk",
+    albumArtistName: "Various Artists",
+    track: 1,
+  });
+
+  library.addTrack({
+    key: "dldd-itve",
+    name: "American Errorist (I Hate Hate Haters)",
+    artistName: "NOFX",
+    albumName: "2004 Warped Tour Compilation",
+    year: 2004,
+    disc: 1,
+    discCount: 2,
+    genre: "Alternative & Punk",
+    albumArtistName: "Various Artists",
+    track: 2,
+  });
+
+  library.addTrack({
+    key: "ukjv-ndsz",
+    name: "Fire Down Below",
+    artistName: "Alkaline Trio",
+    albumName: "2004 Warped Tour Compilation",
+    disc: 2,
+    compilation: true,
+    year: 2004,
+    genre: "Alternative & Punk",
+    track: 1,
+    trackCount: 25,
+  });
+
+  library.addTrack({
+    key: "gfkt-esqz",
+    name: "Requiem For Dissent",
+    artistName: "Bad Religion",
+    albumName: "2004 Warped Tour Compilation",
+    disc: 2,
+    compilation: true,
+    year: 2004,
+    genre: "Alternative & Punk",
+    track: 2,
+    trackCount: 25,
+  });
+
+  library.rebuild();
+
+  it("sorts by disc before track", function() {
+    assert.strictEqual(library.albumList[0].trackList[0].name, "No News Is Good News");
+    assert.strictEqual(library.albumList[0].trackList[1].name, "American Errorist (I Hate Hate Haters)");
+    assert.strictEqual(library.albumList[0].trackList[2].name, "Fire Down Below");
+    assert.strictEqual(library.albumList[0].trackList[3].name, "Requiem For Dissent");
+  });
+});
