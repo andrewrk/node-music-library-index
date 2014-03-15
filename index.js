@@ -124,6 +124,10 @@ MusicLibraryIndex.prototype.rebuildAlbumTable = function() {
     }
     track.searchTags = formatSearchable(searchTags);
 
+    if (!track.albumName) {
+      // ignore album artist if there's no album
+      track.albumArtistName = track.artistName;
+    }
     track.albumArtistName = track.albumArtistName || "";
 
     var albumKey = this.getAlbumKey(track);

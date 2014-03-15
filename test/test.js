@@ -342,3 +342,29 @@ describe("album by an artist", function() {
     assert.strictEqual(library.albumList[0].trackList[3].name, "Requiem For Dissent");
   });
 });
+
+describe("album artist with no album", function() {
+  var library = new MusicLibraryIndex();
+
+  var id = '5a89ea73-71aa-4c22-97a5-3b3509131cca';
+  library.addTrack({
+    key: id,
+    name: 'I Miss You',
+    artistName: 'Blink 182',
+    composerName: '',
+    performerName: '',
+    albumArtistName: 'blink-182',
+    albumName: '',
+    compilation: false,
+    track: 3,
+    duration: 227.6815,
+    year: 2003,
+    genre: 'Rock',
+  });
+
+  library.rebuild();
+
+  it("shouldn't be various artists", function() {
+    assert.notStrictEqual(library.trackTable[id].albumArtistName, "Various Artists");
+  });
+});
