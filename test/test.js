@@ -368,3 +368,40 @@ describe("album artist with no album", function() {
     assert.notStrictEqual(library.trackTable[id].albumArtistName, "Various Artists");
   });
 });
+
+describe("unknown artist, unknown album", function() {
+  var library = new MusicLibraryIndex();
+
+  library.addTrack({
+    key: 'imnd-sxde',
+    name: '01 Shining Armor',
+    artistName: '',
+    albumArtistName: '',
+    albumName: '',
+  });
+
+  library.addTrack({
+    key: 'jakg-nbfg',
+    name: '02 Weird Kids',
+    artistName: '',
+    albumArtistName: '',
+    albumName: '',
+  });
+
+  library.rebuild();
+  var results = library;
+
+  it("should be put into the same album", check);
+
+  library.search("n");
+  results = library.search("");
+
+  it("searching should not affect anything", check);
+
+  function check() {
+    assert.strictEqual(results.artistList.length, 1);
+    assert.strictEqual(results.artistList[0].albumList.length, 1);
+    assert.strictEqual(results.artistList[0].albumList[0].trackList.length, 2);
+    assert.strictEqual(results.artistList[0].albumList[0].trackList[0].album.trackList.length, 2);
+  }
+});

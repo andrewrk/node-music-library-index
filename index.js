@@ -250,8 +250,6 @@ MusicLibraryIndex.prototype.removeTrack = function(key) {
 MusicLibraryIndex.prototype.search = function(query) {
   query = query.trim();
 
-  if (query.length === 0) return this;
-
   var searchResults = new MusicLibraryIndex({
     searchFields: this.searchFields,
     variousArtistsKey: this.variousArtistsKey,
