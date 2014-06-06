@@ -137,10 +137,10 @@ describe("compilation album", function() {
     assert.strictEqual(artist.name, "Various Artists");
     assert.strictEqual(artist.albumList.length, 2);
     assert.strictEqual(library.albumList.length, 2);
-    assert.strictEqual(library.trackTable["jqvq-tpiu"].albumArtistName, "Various Artists");
-    assert.strictEqual(library.trackTable["dldd-itve"].albumArtistName, "Various Artists");
-    assert.strictEqual(library.trackTable["ukjv-ndsz"].albumArtistName, "Various Artists");
-    assert.strictEqual(library.trackTable["gfkt-esqz"].albumArtistName, "Various Artists");
+    assert.strictEqual(library.trackTable["jqvq-tpiu"].albumArtistName, "");
+    assert.strictEqual(library.trackTable["dldd-itve"].albumArtistName, "");
+    assert.strictEqual(library.trackTable["ukjv-ndsz"].albumArtistName, "");
+    assert.strictEqual(library.trackTable["gfkt-esqz"].albumArtistName, "");
   });
 });
 
@@ -404,4 +404,45 @@ describe("unknown artist, unknown album", function() {
     assert.strictEqual(results.artistList[0].albumList[0].trackList.length, 2);
     assert.strictEqual(results.artistList[0].albumList[0].trackList[0].album.trackList.length, 2);
   }
+});
+
+describe("album with album artist", function() {
+  var library = new MusicLibraryIndex();
+
+  var id1 =  'imnd-sxde';
+  library.addTrack({
+    key: id1,
+    name: 'Palladio',
+    artistName: 'Escala',
+    albumArtistName: 'Escala',
+    albumName: 'Escala',
+    track: 1,
+  });
+
+  var id2 = 'vewu-hqbx';
+  library.addTrack({
+    key: id2,
+    name: 'Requiem for a Tower',
+    artistName: 'Escala',
+    albumArtistName: 'Escala',
+    albumName: 'Escala',
+    track: 2,
+  });
+
+  var id3 = 'ixbc-oshh';
+  library.addTrack({
+    key: id3,
+    name: 'Kashmir',
+    artistName: 'Escala; Slash',
+    albumArtistName: 'Escala',
+    albumName: 'Escala',
+    track: 3,
+  });
+  library.rebuild();
+
+  it("shouldn't be various artists", function() {
+    assert.strictEqual(library.trackTable[id1].albumArtistName, "Escala");
+    assert.strictEqual(library.trackTable[id2].albumArtistName, "Escala");
+    assert.strictEqual(library.artistList.length, 1);
+  });
 });

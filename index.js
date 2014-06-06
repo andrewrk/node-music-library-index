@@ -124,9 +124,9 @@ MusicLibraryIndex.prototype.rebuildAlbumTable = function() {
     }
     track.searchTags = formatSearchable(searchTags);
 
-    if (!track.albumName) {
-      // ignore album artist if there's no album
-      track.albumArtistName = track.artistName;
+    if (track.albumArtistName === this.variousArtistsName) {
+      track.albumArtistName = "";
+      track.compilation = true;
     }
     track.albumArtistName = track.albumArtistName || "";
 
@@ -166,6 +166,7 @@ MusicLibraryIndex.prototype.rebuild = function() {
     var albumArtistSet = {};
     album.trackList.sort(this.trackComparator);
     albumArtistName = "";
+    var isCompilation = false;
     for (i = 0; i < album.trackList.length; i += 1) {
       track = album.trackList[i];
       track.index = i;
@@ -174,15 +175,15 @@ MusicLibraryIndex.prototype.rebuild = function() {
         albumArtistSet[this.getArtistKey(albumArtistName)] = true;
       }
       if (!albumArtistName) albumArtistName = track.artistName;
-      albumArtistSet[this.getArtistKey(track.artistName)] = true;
+      albumArtistSet[this.getArtistKey(albumArtistName)] = true;
+      isCompilation = isCompilation || track.compilation;
     }
-    if (moreThanOneKey(albumArtistSet)) {
+    if (isCompilation || moreThanOneKey(albumArtistSet)) {
       albumArtistName = this.variousArtistsName;
       artistKey = this.variousArtistsKey;
       for (i = 0; i < album.trackList.length; i += 1) {
         track = album.trackList[i];
         track.compilation = true;
-        track.albumArtistName = this.variousArtistsName;
       }
     } else {
       artistKey = this.getArtistKey(albumArtistName);
@@ -209,7 +210,7 @@ MusicLibraryIndex.prototype.rebuild = function() {
   }
   this.artistList.sort(this.artistComparator);
   if (variousArtist) {
-    this.artistList.splice(0, 0, variousArtist);
+    this.artistList.unshift(variousArtist);
   }
   for (i = 0; i < this.artistList.length; i += 1) {
     artist = this.artistList[i];
