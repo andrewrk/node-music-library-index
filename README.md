@@ -76,4 +76,20 @@ console.log(library.trackTable);
 
   album with a few tracks by different artists
     ✓ only creates one album 
+
+  album by an artist
+    ✓ should be filed under the artist 
+
+  album by an artist
+    ✓ sorts by disc before track 
+
+  album artist with no album
+    ✓ shouldn't be various artists 
+
+  unknown artist, unknown album
+    ✓ should be put into the same album 
+    ✓ searching should not affect anything 
+
+  album with album artist
+    ✓ shouldn't be various artists 
 ```
