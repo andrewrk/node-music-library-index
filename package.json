@@ -7,7 +7,7 @@
     "test": "mocha --reporter spec test/test.js"
   },
   "author": "Andrew Kelley <superjoe30@gmail.com>",
-  "license": "BSD-2-Clause",
+  "license": "MIT",
   "dependencies": {
     "diacritics": "~1.2.0"
   },
@@ -20,5 +20,9 @@
   },
   "bugs": {
     "url": "https://github.com/superjoe30/node-music-library-index/issues"
+  },
+  "homepage": "https://github.com/superjoe30/node-music-library-index",
+  "directories": {
+    "test": "test"
   }
 }
