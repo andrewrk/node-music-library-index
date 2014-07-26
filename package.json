@@ -12,7 +12,7 @@
     "diacritics": "~1.2.0"
   },
   "devDependencies": {
-    "mocha": "^1.17.1"
+    "mocha": "~1.21.0"
   },
   "repository": {
     "type": "git",
