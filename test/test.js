@@ -446,3 +446,79 @@ describe("album with album artist", function() {
     assert.strictEqual(library.artistList.length, 1);
   });
 });
+
+describe("parseQueryIntoTerms", function() {
+  it("works", function() {
+    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms(""), []);
+    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("a"), ["a"]);
+    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms(" a   b "), ["a", "b"]);
+    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\"a  b\""), ["a  b"]);
+    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\"a  b\\\" c\""), ["a  b\" c"]);
+    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\\\"a  b\""), ["\"a", "b\""]);
+    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\""), ["\""]);
+    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\\"), ["\\"]);
+    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\"\""), []);
+    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("a\" b\"c"), ["a\"", "b\"c"]);
+    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("ab cd e"), ["ab", "cd", "e"]);
+  });
+});
+
+describe("searching with quoted seach terms", function() {
+  var library = new MusicLibraryIndex();
+
+  library.addTrack({
+    key: "fUPmxjMc",
+    name: "Été (Original Mix)",
+    artistName: "AKA AKA & Thalstroem",
+    albumName: "Varieté",
+  });
+
+  library.addTrack({
+    key: "zyGaKkrU",
+    name: "Tribute to Young Stroke AKA Young Muscle",
+    artistName: "Andy Kelley",
+    albumName: "The Weekend Challenge #3",
+  });
+
+  var literalQuoteKey = "G5FqXeJZ";
+  library.addTrack({
+    key: literalQuoteKey,
+    name: "A song with a literal \" in it",
+    artistName: "Tester",
+    albumName: "literalQuote",
+  });
+
+  var literalBackslashKey = "Xsc4+ril";
+  library.addTrack({
+    key: literalBackslashKey,
+    name: "A song with a literal \\ in it",
+    artistName: "Tester",
+    albumName: "literalBackslash",
+  });
+
+  library.rebuild();
+
+  it("single search term returns both", function() {
+    var results = library.search("aka aka");
+    assert.strictEqual(results.artistList.length, 2);
+  });
+
+  it("quoted search term", function() {
+    var results = library.search("\"aka aka\"");
+    assert.strictEqual(results.artistList.length, 1);
+    assert.strictEqual(results.artistList[0].name, "AKA AKA & Thalstroem");
+  });
+
+  it("matches a song with a literal quote", function() {
+    var results = library.search("\"");
+    assert.strictEqual(results.albumList.length, 1);
+    assert.strictEqual(results.albumList[0].trackList.length, 1);
+    assert.strictEqual(results.albumList[0].trackList[0].key, literalQuoteKey);
+  });
+  it("matches a song with a literal backslash", function() {
+    var results = library.search("\\");
+    assert.strictEqual(results.albumList.length, 1);
+    assert.strictEqual(results.albumList[0].trackList.length, 1);
+    assert.strictEqual(results.albumList[0].trackList[0].key, literalBackslashKey);
+  });
+});

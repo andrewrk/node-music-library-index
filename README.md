@@ -2,13 +2,13 @@
 
 Given track metadata objects, constructs a searchable object model.
 This module is used both in the client and the server of
-[Groove Basin](https://github.com/superjoe30/groovebasin).
+[Groove Basin](https://github.com/andrewrk/groovebasin).
 
 ## Features
 
  * Sort order ignores 'a', 'an' and 'the' in artists, albums, and names.
  * Sorting and searching is case insensitive and
-   [diacritics-insensitive](https://github.com/superjoe30/diacritics).
+   [diacritics-insensitive](https://github.com/andrewrk/diacritics).
  * Searching uses word-based filtering (this is how most music player
    applications implement filtering) on all track fields.
  * Distinguishes albums by name, date, and album artist.
@@ -21,6 +21,8 @@ This module is used both in the client and the server of
    * Tracks by user-defined key.
    * Artists by library-defined key.
    * Albums by library-defined key.
+ * Searching allows the use of quotes (`"`) to match multiple word searches
+   and backslash (`\`) to escape literal quotes and backslashes.
 
 ## Usage
 

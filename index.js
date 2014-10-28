@@ -8,6 +8,7 @@ MusicLibraryIndex.defaultVariousArtistsKey = "VariousArtists";
 MusicLibraryIndex.defaultVariousArtistsName = "Various Artists";
 MusicLibraryIndex.defaultSearchFields = ['artistName', 'albumArtistName',
   'albumName', 'name'];
+MusicLibraryIndex.parseQueryIntoTerms = parseQueryIntoTerms;
 
 function MusicLibraryIndex(options) {
   options = options || {};
@@ -249,8 +250,6 @@ MusicLibraryIndex.prototype.removeTrack = function(key) {
 }
 
 MusicLibraryIndex.prototype.search = function(query) {
-  query = query.trim();
-
   var searchResults = new MusicLibraryIndex({
     searchFields: this.searchFields,
     variousArtistsKey: this.variousArtistsKey,
@@ -258,7 +257,7 @@ MusicLibraryIndex.prototype.search = function(query) {
     prefixesToStrip: this.prefixesToStrip,
   });
 
-  var words = formatSearchable(query).split(/\s+/);
+  var terms = parseQueryIntoTerms(query);
 
   var track;
   for (var trackKey in this.trackTable) {
@@ -274,15 +273,66 @@ MusicLibraryIndex.prototype.search = function(query) {
   return searchResults;
 
   function testMatch() {
-    for (var i = 0; i < words.length; i += 1) {
-      var word = words[i];
-      if (track.searchTags.indexOf(word) === -1) {
+    for (var i = 0; i < terms.length; i += 1) {
+      var term = terms[i];
+      if (track.searchTags.indexOf(term) === -1) {
         return false;
       }
     }
     return true;
   }
 };
+
+function parseQueryIntoTerms(query) {
+  var normalizedQuery = formatSearchable(query.trim());
+  var term = "";
+  var inQuote = false;
+  var inEscape = false;
+  var termBoundary = true;
+  var terms = [];
+
+  for (var i = 0; i < normalizedQuery.length; i += 1) {
+    var c = normalizedQuery[i];
+    if (inEscape) {
+      term += c;
+      termBoundary = false;
+      inEscape = false;
+    } else if (/\s/.test(c) && !inQuote) {
+      flushTerm();
+      termBoundary = true;
+    } else if (c === '\\') {
+      inEscape = true;
+    } else if (c === '"') {
+      if (inQuote) {
+        inQuote = false;
+        flushTerm();
+      } else if (termBoundary) {
+        inQuote = true;
+      } else {
+        term += c;
+      }
+    } else {
+      term += c;
+      termBoundary = false;
+    }
+  }
+  flushTerm();
+
+  return terms;
+
+  function flushTerm() {
+    if (inQuote) {
+      term = "\"" + term;
+    }
+    if (inEscape) {
+      term += "\\";
+    }
+    if (term) {
+      terms.push(term);
+      term = "";
+    }
+  }
+}
 
 function getOrCreate(key, table, initObjFunc) {
   var result = table[key];

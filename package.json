@@ -9,19 +9,19 @@
   "author": "Andrew Kelley <superjoe30@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "diacritics": "~1.2.0"
+    "diacritics": "~1.2.1"
   },
   "devDependencies": {
-    "mocha": "~1.21.0"
+    "mocha": "~2.0.1"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/superjoe30/node-music-library-index.git"
+    "url": "git://github.com/andrewrk/node-music-library-index.git"
   },
   "bugs": {
-    "url": "https://github.com/superjoe30/node-music-library-index/issues"
+    "url": "https://github.com/andrewrk/node-music-library-index/issues"
   },
-  "homepage": "https://github.com/superjoe30/node-music-library-index",
+  "homepage": "https://github.com/andrewrk/node-music-library-index",
   "directories": {
     "test": "test"
   }
