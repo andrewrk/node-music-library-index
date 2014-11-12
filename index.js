@@ -2,24 +2,27 @@ var removeDiacritics = require('diacritics').remove;
 
 module.exports = MusicLibraryIndex;
 
-MusicLibraryIndex.defaultPrefixesToStrip = [/^\s*the\s+/, /^\s*a\s+/,
-  /^\s*an\s+/];
+MusicLibraryIndex.defaultPrefixesToStrip = [
+  /^\s*the\s+/,
+  /^\s*a\s+/,
+  /^\s*an\s+/,
+];
 MusicLibraryIndex.defaultVariousArtistsKey = "VariousArtists";
 MusicLibraryIndex.defaultVariousArtistsName = "Various Artists";
-MusicLibraryIndex.defaultSearchFields = ['artistName', 'albumArtistName',
-  'albumName', 'name'];
+MusicLibraryIndex.defaultSearchFields = [
+  'artistName',
+  'albumArtistName',
+  'albumName',
+  'name',
+];
 MusicLibraryIndex.parseQueryIntoTerms = parseQueryIntoTerms;
 
 function MusicLibraryIndex(options) {
   options = options || {};
-  this.searchFields = options.searchFields ||
-    MusicLibraryIndex.defaultSearchFields;
-  this.variousArtistsKey = options.variousArtistsKey ||
-    MusicLibraryIndex.defaultVariousArtistsKey;
-  this.variousArtistsName = options.variousArtistsName ||
-    MusicLibraryIndex.defaultVariousArtistsName;
-  this.prefixesToStrip = options.prefixesToStrip ||
-    MusicLibraryIndex.defaultPrefixesToStrip;
+  this.searchFields = options.searchFields || MusicLibraryIndex.defaultSearchFields;
+  this.variousArtistsKey = options.variousArtistsKey || MusicLibraryIndex.defaultVariousArtistsKey;
+  this.variousArtistsName = options.variousArtistsName || MusicLibraryIndex.defaultVariousArtistsName;
+  this.prefixesToStrip = options.prefixesToStrip || MusicLibraryIndex.defaultPrefixesToStrip;
 
   this.artistComparator = this.artistComparator.bind(this);
   this.albumComparator = this.albumComparator.bind(this);
