@@ -15,7 +15,7 @@ MusicLibraryIndex.defaultSearchFields = [
   'albumName',
   'name',
 ];
-MusicLibraryIndex.parseQueryIntoTerms = parseQueryIntoTerms;
+MusicLibraryIndex.parseQuery = parseQuery;
 
 function MusicLibraryIndex(options) {
   options = options || {};
@@ -126,7 +126,8 @@ MusicLibraryIndex.prototype.rebuildAlbumTable = function() {
     for (var i = 0; i < this.searchFields.length; i += 1) {
       searchTags += track[this.searchFields[i]] + "\n";
     }
-    track.searchTags = formatSearchable(searchTags);
+    track.exactSearchTags = searchTags;
+    track.fuzzySearchTags = formatSearchable(searchTags);
 
     if (track.albumArtistName === this.variousArtistsName) {
       track.albumArtistName = "";
@@ -260,12 +261,12 @@ MusicLibraryIndex.prototype.search = function(query) {
     prefixesToStrip: this.prefixesToStrip,
   });
 
-  var terms = parseQueryIntoTerms(query);
+  var matcher = parseQuery(query);
 
   var track;
   for (var trackKey in this.trackTable) {
     track = this.trackTable[trackKey];
-    if (testMatch()) {
+    if (matcher(track)) {
       searchResults.trackTable[track.key] = track;
     }
   }
@@ -275,27 +276,50 @@ MusicLibraryIndex.prototype.search = function(query) {
 
   return searchResults;
 
-  function testMatch() {
-    for (var i = 0; i < terms.length; i += 1) {
-      var term = terms[i];
-      if (track.searchTags.indexOf(term) === -1) {
-        return false;
-      }
+};
+
+function makeFuzzyTextMatcher(term) {
+  term = formatSearchable(term);
+  fuzzyTextMatcher.toString = function() {
+    return "(fuzzy " + JSON.stringify(term) + ")"
+  };
+  return fuzzyTextMatcher;
+  function fuzzyTextMatcher(track) {
+    return track.fuzzySearchTags.indexOf(term) !== -1;
+  }
+}
+function makeExactTextMatcher(term) {
+  exactTextMatcher.toString = function() {
+    return "(exact " + JSON.stringify(term) + ")"
+  };
+  return exactTextMatcher;
+  function exactTextMatcher(track) {
+    return track.exactSearchTags.indexOf(term) !== -1;
+  }
+}
+function makeAndMatcher(children) {
+  if (children.length === 1) return children[0];
+  andMatcher.toString = function() {
+    return "(" + children.join(" AND ") + ")";
+  };
+  return andMatcher;
+  function andMatcher(track) {
+    for (var i = 0; i < children.length; i++) {
+      if (!children[i](track)) return false;
     }
     return true;
   }
-};
-
-function parseQueryIntoTerms(query) {
-  var normalizedQuery = formatSearchable(query.trim());
+}
+function parseQuery(query) {
+  query = query.trim();
   var term = "";
   var inQuote = false;
   var inEscape = false;
   var termBoundary = true;
-  var terms = [];
+  var matchers = [];
 
-  for (var i = 0; i < normalizedQuery.length; i += 1) {
-    var c = normalizedQuery[i];
+  for (var i = 0; i < query.length; i += 1) {
+    var c = query[i];
     if (inEscape) {
       term += c;
       termBoundary = false;
@@ -308,7 +332,7 @@ function parseQueryIntoTerms(query) {
     } else if (c === '"') {
       if (inQuote) {
         inQuote = false;
-        flushTerm();
+        flushTerm(true);
       } else if (termBoundary) {
         inQuote = true;
       } else {
@@ -321,9 +345,9 @@ function parseQueryIntoTerms(query) {
   }
   flushTerm();
 
-  return terms;
+  return makeAndMatcher(matchers);
 
-  function flushTerm() {
+  function flushTerm(exact) {
     if (inQuote) {
       term = "\"" + term;
     }
@@ -331,7 +355,7 @@ function parseQueryIntoTerms(query) {
       term += "\\";
     }
     if (term) {
-      terms.push(term);
+      matchers.push(exact ? makeExactTextMatcher(term) : makeFuzzyTextMatcher(term));
       term = "";
     }
   }

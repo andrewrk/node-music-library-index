@@ -447,19 +447,19 @@ describe("album with album artist", function() {
   });
 });
 
-describe("parseQueryIntoTerms", function() {
+describe("parseQuery", function() {
   it("works", function() {
-    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms(""), []);
-    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("a"), ["a"]);
-    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms(" a   b "), ["a", "b"]);
-    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\"a  b\""), ["a  b"]);
-    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\"a  b\\\" c\""), ["a  b\" c"]);
-    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\\\"a  b\""), ["\"a", "b\""]);
-    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\""), ["\""]);
-    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\\"), ["\\"]);
-    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("\"\""), []);
-    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("a\" b\"c"), ["a\"", "b\"c"]);
-    assert.deepEqual(MusicLibraryIndex.parseQueryIntoTerms("ab cd e"), ["ab", "cd", "e"]);
+    assert.strictEqual(MusicLibraryIndex.parseQuery("").toString(), '()');
+    assert.strictEqual(MusicLibraryIndex.parseQuery("a").toString(), '(fuzzy "a")');
+    assert.strictEqual(MusicLibraryIndex.parseQuery(" a   b ").toString(), '((fuzzy "a") AND (fuzzy "b"))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery("\"a  b\"").toString(), '(exact "a  b")');
+    assert.strictEqual(MusicLibraryIndex.parseQuery("\"a  b\\\" c\"").toString(), '(exact "a  b\\\" c")');
+    assert.strictEqual(MusicLibraryIndex.parseQuery("\\\"a  b\"").toString(), '((fuzzy "\\\"a") AND (fuzzy "b\\\""))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery("\"").toString(), '(fuzzy "\\\"")');
+    assert.strictEqual(MusicLibraryIndex.parseQuery("\\").toString(), '(fuzzy "\\\\")');
+    assert.strictEqual(MusicLibraryIndex.parseQuery("\"\"").toString(), '()');
+    assert.strictEqual(MusicLibraryIndex.parseQuery("a\" b\"c").toString(), '((fuzzy "a\\\"") AND (fuzzy "b\\\"c"))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery("ab cd e").toString(), '((fuzzy "ab") AND (fuzzy "cd") AND (fuzzy "e"))');
   });
 });
 
@@ -478,6 +478,19 @@ describe("searching with quoted seach terms", function() {
     name: "Tribute to Young Stroke AKA Young Muscle",
     artistName: "Andy Kelley",
     albumName: "The Weekend Challenge #3",
+  });
+
+  library.addTrack({
+    key: "v7zwEPLs",
+    name: "Mista veri pakenee",
+    artistName: "Turmion Katilot (no diacritics)",
+    albumName: "Pirun nyrkki",
+  });
+  library.addTrack({
+    key: "sobHcy0I",
+    name: "Mistä veri pakenee",
+    artistName: "Turmion Kätilöt (with diacritics)",
+    albumName: "Pirun nyrkki",
   });
 
   var literalQuoteKey = "G5FqXeJZ";
@@ -503,10 +516,21 @@ describe("searching with quoted seach terms", function() {
     assert.strictEqual(results.artistList.length, 2);
   });
 
-  it("quoted search term", function() {
-    var results = library.search("\"aka aka\"");
+  it("quoted search term is case sensitive", function() {
+    assert.strictEqual(library.search("\"andy\"").artistList.length, 0);
+    assert.strictEqual(library.search("\"ANDY\"").artistList.length, 0);
+    assert.strictEqual(library.search("\"Andy\"").artistList.length, 1);
+  });
+
+  it("quoted search terms include spaces", function() {
+    var results = library.search("\"AKA AKA\"");
     assert.strictEqual(results.artistList.length, 1);
     assert.strictEqual(results.artistList[0].name, "AKA AKA & Thalstroem");
+  });
+
+  it("quoted search terms preserve diacritics", function() {
+    assert.strictEqual(library.search("Mistä").artistList.length, 2);
+    assert.strictEqual(library.search("\"Mistä\"").artistList.length, 1);
   });
 
   it("matches a song with a literal quote", function() {
