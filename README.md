@@ -21,8 +21,10 @@ This module is used both in the client and the server of
    * Tracks by user-defined key.
    * Artists by library-defined key.
    * Albums by library-defined key.
- * Searching allows the use of quotes (`"`) to match multiple word searches
-   and backslash (`\`) to escape literal quotes and backslashes.
+ * Searching allows the use of quotes (`"`) which exactly matches every
+   character in the quotes, including spaces, upper- and lower-case
+   letters, and characters with diacritics. Inside quotes, use backslash
+   (`\`) to escape literal quotes and backslashes.
 
 ## Usage
 
