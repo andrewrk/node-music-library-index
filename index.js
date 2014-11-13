@@ -280,13 +280,14 @@ MusicLibraryIndex.prototype.search = function(query) {
 };
 
 function makeFuzzyTextMatcher(term) {
-  fuzzyTextMatcher.term = formatSearchable(term);;
+  // make this publicly modifiable
+  fuzzyTextMatcher.fuzzyTerm = formatSearchable(term);;
   fuzzyTextMatcher.toString = function() {
-    return "(fuzzy " + JSON.stringify(fuzzyTextMatcher.term) + ")"
+    return "(fuzzy " + JSON.stringify(fuzzyTextMatcher.fuzzyTerm) + ")"
   };
   return fuzzyTextMatcher;
   function fuzzyTextMatcher(track) {
-    return track.fuzzySearchTags.indexOf(fuzzyTextMatcher.term) !== -1;
+    return track.fuzzySearchTags.indexOf(fuzzyTextMatcher.fuzzyTerm) !== -1;
   }
 }
 function makeExactTextMatcher(term) {
@@ -325,15 +326,15 @@ var tokenizerRegex = new RegExp(
   '( +)'                        +'|'+ // 1: whitespace between terms (not in quotes)
   '(\\()'                       +'|'+ // 2: open parenthesis at the start of a term
   '(\\))'                       +'|'+ // 3: end parenthesis
-  '("(?:[^"\\\\]|\\\\.)*"\\)*)' +'|'+ // 4: quoted thing. can end with parentheses
-  '(not:)'                      +'|'+ // 5: not: prefix
+  '(not:)'                      +'|'+ // 4: not: prefix
+  '("(?:[^"\\\\]|\\\\.)*"\\)*)' +'|'+ // 5: quoted thing. can end with parentheses
   '([^ ]+)',                          // 6: normal word. can end with parentheses
   "g");
 var WHITESPACE = 1;
 var OPEN_PARENTHESIS = 2;
 var CLOSE_PARENTHESIS = 3;
-var QUOTED_THING = 4;
-var NOT = 5;
+var NOT = 4;
+var QUOTED_THING = 5;
 var NORMAL_WORD = 6;
 function tokenizeQuery(query) {
   tokenizerRegex.lastIndex = 0;
@@ -353,6 +354,7 @@ function tokenizeQuery(query) {
       case WHITESPACE:
       case OPEN_PARENTHESIS:
       case CLOSE_PARENTHESIS:
+      case NOT:
         tokens.push({type: type, text: term});
         break;
       case QUOTED_THING:
@@ -393,21 +395,22 @@ function parseQuery(query) {
         case CLOSE_PARENTHESIS:
           if (waitForTokenType === CLOSE_PARENTHESIS) return makeAndMatcher(matchers);
           // misplaced )
-          if (!justSawWhitespace && tokens[tokenIndex - 2].type == NORMAL_WORD) {
+          var previousMatcher = matchers[matchers.length - 1];
+          if (!justSawWhitespace && previousMatcher != null && previousMatcher.fuzzyTerm != null) {
             // slap it on the back of the last guy
-            matchers[matchers.length - 1].term += token.text;
+            previousMatcher.fuzzyTerm += token.text;
           } else {
             // it's its own term
             matchers.push(makeFuzzyTextMatcher(token.text));
           }
           break;
+        case NOT:
+          matchers.push(parseNot());
+          break;
         case QUOTED_THING:
           if (token.text.length !== 0) {
             matchers.push(makeExactTextMatcher(token.text));
           }
-          break;
-        case NOT:
-          matchers.push(parseNot());
           break;
         case NORMAL_WORD:
           matchers.push(makeFuzzyTextMatcher(token.text));
@@ -435,11 +438,11 @@ function parseQuery(query) {
       case OPEN_PARENTHESIS:
         // "not:("
         return makeNotMatcher(parseAnd(CLOSE_PARENTHESIS));
+      case NOT:
+        // double negative all the way.
+        return makeNotMatcher(parseNot());
       case QUOTED_THING:
         return makeNotMatcher(makeExactTextMatcher(token.text));
-      case NOT:
-        // double negative all the way. what does it mean?
-        return makeNotMatcher(parseNot());
       case NORMAL_WORD:
         return makeNotMatcher(makeFuzzyTextMatcher(token.text));
     }

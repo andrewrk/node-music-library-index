@@ -451,7 +451,7 @@ describe("parseQuery", function() {
   it("works", function() {
     assert.strictEqual(MusicLibraryIndex.parseQuery('').toString(), '()');
     assert.strictEqual(MusicLibraryIndex.parseQuery('a').toString(), '(fuzzy "a")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery(' a   b ').toString(), '((fuzzy "a") AND (fuzzy "b"))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery(' ab   cd ').toString(), '((fuzzy "ab") AND (fuzzy "cd"))');
     assert.strictEqual(MusicLibraryIndex.parseQuery('"a  b"').toString(), '(exact "a  b")');
     assert.strictEqual(MusicLibraryIndex.parseQuery('"a  b\\" c"').toString(), '(exact "a  b\\\" c")');
     assert.strictEqual(MusicLibraryIndex.parseQuery('\\"a  b"').toString(), '((fuzzy "\\\\\\"a") AND (fuzzy "b\\""))');
@@ -459,7 +459,15 @@ describe("parseQuery", function() {
     assert.strictEqual(MusicLibraryIndex.parseQuery('\\').toString(), '(fuzzy "\\\\")');
     assert.strictEqual(MusicLibraryIndex.parseQuery('""').toString(), '()');
     assert.strictEqual(MusicLibraryIndex.parseQuery('a" b"c').toString(), '((fuzzy "a\\\"") AND (fuzzy "b\\\"c"))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('ab cd e').toString(), '((fuzzy "ab") AND (fuzzy "cd") AND (fuzzy "e"))');
+
+    assert.strictEqual(MusicLibraryIndex.parseQuery('not:A').toString(), '(not (fuzzy "a"))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('not:"A"').toString(), '(not (exact "A"))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('not:(a b)').toString(), '(not ((fuzzy "a") AND (fuzzy "b")))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('not:(a)').toString(), '(not (fuzzy "a"))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('not:not:a').toString(), '(not (not (fuzzy "a")))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('not:').toString(), '(fuzzy "not:")');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('not: a').toString(), '((fuzzy "not:") AND (fuzzy "a"))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('not:)a').toString(), '((fuzzy "not:)") AND (fuzzy "a"))');
   });
 });
 
@@ -544,5 +552,37 @@ describe("searching with quoted seach terms", function() {
     assert.strictEqual(results.albumList.length, 1);
     assert.strictEqual(results.albumList[0].trackList.length, 1);
     assert.strictEqual(results.albumList[0].trackList[0].key, literalBackslashKey);
+  });
+});
+
+describe("searching with expressions", function() {
+  var library = new MusicLibraryIndex();
+  library.addTrack({
+    key: "fUPmxjMc",
+    name: "Été (Original Mix)",
+    artistName: "AKA AKA & Thalstroem",
+    albumName: "Varieté",
+  });
+  library.addTrack({
+    key: "v7zwEPLs",
+    name: "Été (Remix)",
+    artistName: "Some Remixer",
+    albumName: "Varieté",
+  });
+  library.addTrack({
+    key: "zyGaKkrU",
+    name: "Tribute to Young Stroke AKA Young Muscle",
+    artistName: "Andy Kelley",
+    albumName: "The Weekend Challenge #3",
+  });
+  library.rebuild();
+
+  it("'not:'", function() {
+    assert.strictEqual(library.search('not:andy').artistList.length, 2);
+    assert.strictEqual(library.search('not:remix variete').artistList.length, 1);
+    assert.strictEqual(library.search('not:"AKA AKA"').artistList.length, 2);
+    assert.strictEqual(library.search('not:"aka aka"').artistList.length, 3);
+    assert.strictEqual(library.search('not:(aka young)').artistList.length, 2);
+    assert.strictEqual(library.search('not:').artistList.length, 0);
   });
 });
