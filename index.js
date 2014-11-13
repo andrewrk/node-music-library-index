@@ -311,19 +311,30 @@ function makeAndMatcher(children) {
     return true;
   }
 }
+function makeNotMatcher(subMatcher) {
+  notMatcher.toString = function() {
+    return "(not " + subMatcher.toString() + ")";
+  };
+  return notMatcher;
+  function notMatcher(track) {
+    return !subMatcher(track);
+  }
+}
 
 var tokenizerRegex = new RegExp(
   '( +)'                        +'|'+ // 1: whitespace between terms (not in quotes)
   '(\\()'                       +'|'+ // 2: open parenthesis at the start of a term
   '(\\))'                       +'|'+ // 3: end parenthesis
   '("(?:[^"\\\\]|\\\\.)*"\\)*)' +'|'+ // 4: quoted thing. can end with parentheses
-  '([^ ]+)',                          // 5: normal word. can end with parentheses
+  '(not:)'                      +'|'+ // 5: not: prefix
+  '([^ ]+)',                          // 6: normal word. can end with parentheses
   "g");
 var WHITESPACE = 1;
 var OPEN_PARENTHESIS = 2;
 var CLOSE_PARENTHESIS = 3;
 var QUOTED_THING = 4;
-var NORMAL_WORD = 5;
+var NOT = 5;
+var NORMAL_WORD = 6;
 function tokenizeQuery(query) {
   tokenizerRegex.lastIndex = 0;
   var tokens = [];
@@ -363,6 +374,7 @@ function tokenizeQuery(query) {
   }
   return tokens;
 }
+
 function parseQuery(query) {
   var tokens = tokenizeQuery(query);
   var tokenIndex = 0;
@@ -392,6 +404,9 @@ function parseQuery(query) {
         case QUOTED_THING:
           matchers.push(makeExactTextMatcher(token.text));
           break;
+        case NOT:
+          matchers.push(parseNot());
+          break;
         case NORMAL_WORD:
           matchers.push(makeFuzzyTextMatcher(token.text));
           break;
@@ -400,6 +415,35 @@ function parseQuery(query) {
     }
     return makeAndMatcher(matchers);
   }
+
+  function parseNot() {
+    if (tokenIndex >= tokens.length) {
+      // "not:" then EOF. treat it as a fuzzy matcher for "not:"
+      return makeFuzzyTextMatcher(tokens[tokenIndex - 1].text);
+    }
+    var token = tokens[tokenIndex++];
+    switch (token.type) {
+      case WHITESPACE:
+      case CLOSE_PARENTHESIS:
+        // "not: " or "not:)"
+        // Treat the "not:" as a fuzzy matcher,
+        // and let the parent deal with this token
+        tokenIndex--;
+        return makeFuzzyTextMatcher(tokens[tokenIndex - 1].text);
+      case OPEN_PARENTHESIS:
+        // "not:("
+        return makeNotMatcher(parseAnd(CLOSE_PARENTHESIS));
+      case QUOTED_THING:
+        return makeNotMatcher(makeExactTextMatcher(token.text));
+      case NOT:
+        // double negative all the way. what does it mean?
+        return makeNotMatcher(parseNot());
+      case NORMAL_WORD:
+        return makeNotMatcher(makeFuzzyTextMatcher(token.text));
+    }
+    throw new Error("unreachable");
+  }
+
 }
 
 function getOrCreate(key, table, initObjFunc) {
