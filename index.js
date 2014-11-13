@@ -402,7 +402,9 @@ function parseQuery(query) {
           }
           break;
         case QUOTED_THING:
-          matchers.push(makeExactTextMatcher(token.text));
+          if (token.text.length !== 0) {
+            matchers.push(makeExactTextMatcher(token.text));
+          }
           break;
         case NOT:
           matchers.push(parseNot());

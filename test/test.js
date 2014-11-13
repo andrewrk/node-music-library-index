@@ -449,17 +449,17 @@ describe("album with album artist", function() {
 
 describe("parseQuery", function() {
   it("works", function() {
-    assert.strictEqual(MusicLibraryIndex.parseQuery("").toString(), '()');
-    assert.strictEqual(MusicLibraryIndex.parseQuery("a").toString(), '(fuzzy "a")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery(" a   b ").toString(), '((fuzzy "a") AND (fuzzy "b"))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery("\"a  b\"").toString(), '(exact "a  b")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery("\"a  b\\\" c\"").toString(), '(exact "a  b\\\" c")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery("\\\"a  b\"").toString(), '((fuzzy "\\\"a") AND (fuzzy "b\\\""))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery("\"").toString(), '(fuzzy "\\\"")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery("\\").toString(), '(fuzzy "\\\\")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery("\"\"").toString(), '()');
-    assert.strictEqual(MusicLibraryIndex.parseQuery("a\" b\"c").toString(), '((fuzzy "a\\\"") AND (fuzzy "b\\\"c"))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery("ab cd e").toString(), '((fuzzy "ab") AND (fuzzy "cd") AND (fuzzy "e"))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('').toString(), '()');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('a').toString(), '(fuzzy "a")');
+    assert.strictEqual(MusicLibraryIndex.parseQuery(' a   b ').toString(), '((fuzzy "a") AND (fuzzy "b"))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('"a  b"').toString(), '(exact "a  b")');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('"a  b\\" c"').toString(), '(exact "a  b\\\" c")');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('\\"a  b"').toString(), '((fuzzy "\\\\\\"a") AND (fuzzy "b\\""))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('"').toString(), '(fuzzy "\\\"")');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('\\').toString(), '(fuzzy "\\\\")');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('""').toString(), '()');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('a" b"c').toString(), '((fuzzy "a\\\"") AND (fuzzy "b\\\"c"))');
+    assert.strictEqual(MusicLibraryIndex.parseQuery('ab cd e').toString(), '((fuzzy "ab") AND (fuzzy "cd") AND (fuzzy "e"))');
   });
 });
 
