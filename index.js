@@ -28,7 +28,9 @@ function MusicLibraryIndex(options) {
   this.artistComparator = this.artistComparator.bind(this);
   this.albumComparator = this.albumComparator.bind(this);
   this.trackComparator = this.trackComparator.bind(this);
-  this.clear();
+  this.labelComparator = this.labelComparator.bind(this);
+  this.clearTracks();
+  this.clearLabels();
 }
 
 MusicLibraryIndex.prototype.stripPrefixes = function(str) {
@@ -90,6 +92,10 @@ MusicLibraryIndex.prototype.artistComparator = function(a, b) {
   return this.titleCompare(a.name, b.name);
 }
 
+MusicLibraryIndex.prototype.labelComparator = function(a, b) {
+  return this.titleCompare(a.name, b.name);
+}
+
 MusicLibraryIndex.prototype.getAlbumKey = function(track) {
   var artistName = track.albumArtistName ||
     (track.compilation ? this.variousArtistsName : track.artistName);
@@ -100,19 +106,22 @@ MusicLibraryIndex.prototype.getArtistKey = function(artistName) {
   return formatSearchable(artistName);
 };
 
-MusicLibraryIndex.prototype.clear = function() {
+MusicLibraryIndex.prototype.clearTracks = function() {
   this.trackTable = {};
   this.artistTable = {};
   this.artistList = [];
   this.albumTable = {};
   this.albumList = [];
-  this.dirty = false;
-  this.dirtyAlbumTable = false;
+  this.dirtyTracks = false;
+};
+
+MusicLibraryIndex.prototype.clearLabels = function() {
+  this.labelTable = {};
+  this.labelList = [];
+  this.dirtyLabels = false;
 };
 
 MusicLibraryIndex.prototype.rebuildAlbumTable = function() {
-  if (!this.dirtyAlbumTable) return;
-
   // builds everything from trackTable
   this.artistTable = {};
   this.artistList = [];
@@ -145,8 +154,6 @@ MusicLibraryIndex.prototype.rebuildAlbumTable = function() {
     }
   }
 
-  this.dirtyAlbumTable = false;
-
   function createAlbum() {
     var album = {
       name: track.albumName,
@@ -159,8 +166,8 @@ MusicLibraryIndex.prototype.rebuildAlbumTable = function() {
   }
 };
 
-MusicLibraryIndex.prototype.rebuild = function() {
-  if (!this.dirty) return;
+MusicLibraryIndex.prototype.rebuildTracks = function() {
+  if (!this.dirtyTracks) return;
   this.rebuildAlbumTable();
   this.albumList.sort(this.albumComparator);
 
@@ -223,7 +230,7 @@ MusicLibraryIndex.prototype.rebuild = function() {
     artist.index = i;
   }
 
-  this.dirty = false;
+  this.dirtyTracks = false;
 
   function createArtist() {
     return {
@@ -234,24 +241,41 @@ MusicLibraryIndex.prototype.rebuild = function() {
   }
 }
 
+MusicLibraryIndex.prototype.rebuildLabels = function() {
+  if (!this.dirtyLabels) return;
+
+  this.labelList = [];
+  for (var id in this.labelTable) {
+    var label = this.labelTable[id];
+    this.labelList.push(label);
+  }
+
+  this.labelList.sort(this.labelComparator);
+  this.labelList.forEach(function(label, index) {
+    label.index = index;
+  });
+
+  this.dirtyLabels = false;
+}
+
 MusicLibraryIndex.prototype.addTrack = function(track) {
-  var oldTrack = this.trackTable[track.key];
-  this.dirty = this.dirty ||
-      oldTrack == null ||
-      oldTrack.artistName !== track.artistName ||
-      oldTrack.albumArtistName !== track.albumArtistName ||
-      oldTrack.albumName !== track.albumName ||
-      oldTrack.track !== track.track ||
-      oldTrack.disc !== track.disc ||
-      oldTrack.year !== track.year;
-  this.dirtyAlbumTable = this.dirty;
   this.trackTable[track.key] = track;
+  this.dirtyTracks = true;
 }
 
 MusicLibraryIndex.prototype.removeTrack = function(key) {
   delete this.trackTable[key];
-  this.dirty = true;
-  this.dirtyAlbumTable = true;
+  this.dirtyTracks = true;
+}
+
+MusicLibraryIndex.prototype.addLabel = function(label) {
+  this.labelTable[label.id] = label;
+  this.dirtyLabels = true;
+}
+
+MusicLibraryIndex.prototype.removeLabel = function(id) {
+  delete this.labelTable[id];
+  this.dirtyLabels = true;
 }
 
 MusicLibraryIndex.prototype.search = function(query) {
@@ -271,9 +295,8 @@ MusicLibraryIndex.prototype.search = function(query) {
       searchResults.trackTable[track.key] = track;
     }
   }
-  searchResults.dirty = true;
-  searchResults.dirtyAlbumTable = true;
-  searchResults.rebuild();
+  searchResults.dirtyTracks = true;
+  searchResults.rebuildTracks();
 
   return searchResults;
 

@@ -26,7 +26,7 @@ describe("basic index building", function() {
     albumArtistName: "Anberlin",
   });
 
-  library.rebuild();
+  library.rebuildTracks();
 
   it("trackTable", function() {
     var track = library.trackTable["Anberlin/Never Take Friendship Personal/08. The Feel Good Drag.mp3"];
@@ -128,7 +128,7 @@ describe("compilation album", function() {
     trackCount: 25,
   });
 
-  library.rebuild();
+  library.rebuildTracks();
 
   it("filed in various artists", function() {
     assert.strictEqual(library.albumList.length, 2);
@@ -177,7 +177,7 @@ describe("tracks from same album missing year metadata", function() {
     track: 3,
   });
 
-  library.rebuild();
+  library.rebuildTracks();
 
   it("still knows they're in the same album", function() {
     assert.strictEqual(library.albumList.length, 1);
@@ -209,7 +209,7 @@ describe("different albums with same name", function() {
     track: 2,
   });
 
-  library.rebuild();
+  library.rebuildTracks();
 
   it("detects that they are different", function() {
     assert.strictEqual(library.albumList.length, 2);
@@ -242,7 +242,7 @@ describe("album with a few tracks by different artists", function() {
   });
 
 
-  library.rebuild();
+  library.rebuildTracks();
 
   it("only creates one album", function() {
     assert.strictEqual(library.albumList.length, 1);
@@ -271,7 +271,7 @@ describe("album by an artist", function() {
   });
 
 
-  library.rebuild();
+  library.rebuildTracks();
 
   it("should be filed under the artist", function() {
     assert.strictEqual(library.artistList.length, 1);
@@ -333,7 +333,7 @@ describe("album by an artist", function() {
     trackCount: 25,
   });
 
-  library.rebuild();
+  library.rebuildTracks();
 
   it("sorts by disc before track", function() {
     assert.strictEqual(library.albumList[0].trackList[0].name, "No News Is Good News");
@@ -362,7 +362,7 @@ describe("album artist with no album", function() {
     genre: 'Rock',
   });
 
-  library.rebuild();
+  library.rebuildTracks();
 
   it("shouldn't be various artists", function() {
     assert.notStrictEqual(library.trackTable[id].albumArtistName, "Various Artists");
@@ -388,7 +388,7 @@ describe("unknown artist, unknown album", function() {
     albumName: '',
   });
 
-  library.rebuild();
+  library.rebuildTracks();
   var results = library;
 
   it("should be put into the same album", check);
@@ -438,12 +438,39 @@ describe("album with album artist", function() {
     albumName: 'Escala',
     track: 3,
   });
-  library.rebuild();
+  library.rebuildTracks();
 
   it("shouldn't be various artists", function() {
     assert.strictEqual(library.trackTable[id1].albumArtistName, "Escala");
     assert.strictEqual(library.trackTable[id2].albumArtistName, "Escala");
     assert.strictEqual(library.artistList.length, 1);
+  });
+});
+
+
+describe("label management", function() {
+  var library = new MusicLibraryIndex();
+
+  library.addLabel({
+    id: "wrong_id",
+    name: "wrong",
+  });
+  library.rebuildLabels();
+  library.clearLabels();
+
+  library.addLabel({
+    id: "techno_id",
+    name: "techno",
+  });
+  library.addLabel({
+    id: "jazz_id",
+    name: "jazz",
+  });
+  library.rebuildLabels();
+
+  it("clearLabels, addLabel", function() {
+    assert.strictEqual(library.labelList[0].name, "jazz");
+    assert.strictEqual(library.labelList[1].name, "techno");
   });
 });
 
@@ -517,7 +544,7 @@ describe("searching with quoted seach terms", function() {
     albumName: "literalBackslash",
   });
 
-  library.rebuild();
+  library.rebuildTracks();
 
   it("single search term returns both", function() {
     var results = library.search("aka aka");
@@ -575,7 +602,7 @@ describe("searching with expressions", function() {
     artistName: "Andy Kelley",
     albumName: "The Weekend Challenge #3",
   });
-  library.rebuild();
+  library.rebuildTracks();
 
   it("'not:'", function() {
     assert.strictEqual(library.search('not:andy').artistList.length, 2);

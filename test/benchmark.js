@@ -12,8 +12,8 @@ fs.readFile(indexPath, function(err, data) {
   for (var key in input) {
     library.addTrack(input[key]);
   }
-  timed("rebuild()", function() {
-    library.rebuild();
+  timed("rebuildTracks()", function() {
+    library.rebuildTracks();
   });
   for (var i = 3; i < process.argv.length; i++) {
     timedSearch(process.argv[i]);

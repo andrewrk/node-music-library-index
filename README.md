@@ -57,7 +57,7 @@ library.addTrack({
   albumArtistName: "Anberlin",
 });
 
-library.rebuild();
+library.rebuildTracks();
 
 console.log(library.artistList[0]);
 console.log(library.trackTable);
