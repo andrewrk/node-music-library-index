@@ -55,9 +55,17 @@ library.addTrack({
   genre: "Other",
   track: 8,
   albumArtistName: "Anberlin",
+  label: {"favorites_id": 1},
 });
 
 library.rebuildTracks();
+
+library.addLabel({
+  id: "favorites_id",
+  name: "favorites",
+});
+
+library.rebuildLabels();
 
 console.log(library.artistList[0]);
 console.log(library.trackTable);
