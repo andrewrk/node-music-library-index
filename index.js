@@ -15,8 +15,6 @@ MusicLibraryIndex.defaultSearchFields = [
   'albumName',
   'name',
 ];
-MusicLibraryIndex.parseQuery = parseQuery;
-MusicLibraryIndex.tokenizeQuery = tokenizeQuery;
 
 function MusicLibraryIndex(options) {
   options = options || {};
@@ -286,7 +284,7 @@ MusicLibraryIndex.prototype.search = function(query) {
     prefixesToStrip: this.prefixesToStrip,
   });
 
-  var matcher = parseQuery(query);
+  var matcher = this.parseQuery(query);
 
   var track;
   for (var trackKey in this.trackTable) {
@@ -302,177 +300,244 @@ MusicLibraryIndex.prototype.search = function(query) {
 
 };
 
-function makeFuzzyTextMatcher(term) {
-  // make this publicly modifiable
-  fuzzyTextMatcher.fuzzyTerm = formatSearchable(term);;
-  fuzzyTextMatcher.toString = function() {
-    return "(fuzzy " + JSON.stringify(fuzzyTextMatcher.fuzzyTerm) + ")"
-  };
-  return fuzzyTextMatcher;
-  function fuzzyTextMatcher(track) {
-    return track.fuzzySearchTags.indexOf(fuzzyTextMatcher.fuzzyTerm) !== -1;
-  }
-}
-function makeExactTextMatcher(term) {
-  exactTextMatcher.toString = function() {
-    return "(exact " + JSON.stringify(term) + ")"
-  };
-  return exactTextMatcher;
-  function exactTextMatcher(track) {
-    return track.exactSearchTags.indexOf(term) !== -1;
-  }
-}
-function makeAndMatcher(children) {
-  if (children.length === 1) return children[0];
-  andMatcher.toString = function() {
-    return "(" + children.join(" AND ") + ")";
-  };
-  return andMatcher;
-  function andMatcher(track) {
-    for (var i = 0; i < children.length; i++) {
-      if (!children[i](track)) return false;
-    }
-    return true;
-  }
-}
-function makeNotMatcher(subMatcher) {
-  notMatcher.toString = function() {
-    return "(not " + subMatcher.toString() + ")";
-  };
-  return notMatcher;
-  function notMatcher(track) {
-    return !subMatcher(track);
-  }
-}
-
 var tokenizerRegex = new RegExp(
   '( +)'                        +'|'+ // 1: whitespace between terms (not in quotes)
   '(\\()'                       +'|'+ // 2: open parenthesis at the start of a term
   '(\\))'                       +'|'+ // 3: end parenthesis
   '(not:)'                      +'|'+ // 4: not: prefix
-  '("(?:[^"\\\\]|\\\\.)*"\\)*)' +'|'+ // 5: quoted thing. can end with parentheses
-  '([^ ]+)',                          // 6: normal word. can end with parentheses
+  '(label:)'                    +'|'+ // 5: label: prefix
+  '("(?:[^"\\\\]|\\\\.)*"\\)*)' +'|'+ // 6: quoted thing. can end with parentheses
+  '([^ ]+)',                          // 7: normal word. can end with parentheses
   "g");
 var WHITESPACE = 1;
 var OPEN_PARENTHESIS = 2;
 var CLOSE_PARENTHESIS = 3;
 var NOT = 4;
-var QUOTED_THING = 5;
-var NORMAL_WORD = 6;
-function tokenizeQuery(query) {
-  tokenizerRegex.lastIndex = 0;
-  var tokens = [];
-  while (true) {
-    var match = tokenizerRegex.exec(query);
-    if (match == null) break;
-    var term = match[0];
-    var type;
-    for (var i = 1; i < match.length; i++) {
-      if (match[i] != null) {
-        type = i;
-        break;
+var LABEL = 5;
+var QUOTED_THING = 6;
+var NORMAL_WORD = 7;
+MusicLibraryIndex.prototype.parseQuery = function(query) {
+  var self = this;
+  return parse(query);
+
+  function parse(query) {
+    var tokens = tokenizeQuery(query);
+    var tokenIndex = 0;
+    return parseAnd(null);
+
+    function parseAnd(waitForTokenType) {
+      var matchers = [];
+      var justSawWhitespace = true;
+      while (tokenIndex < tokens.length) {
+        var token = tokens[tokenIndex++];
+        switch (token.type) {
+          case OPEN_PARENTHESIS:
+            var subMatcher = parseAnd(CLOSE_PARENTHESIS);
+            matchers.push(subMatcher);
+            break;
+          case CLOSE_PARENTHESIS:
+            if (waitForTokenType === CLOSE_PARENTHESIS) return makeAndMatcher(matchers);
+            // misplaced )
+            var previousMatcher = matchers[matchers.length - 1];
+            if (!justSawWhitespace && previousMatcher != null && previousMatcher.fuzzyTerm != null) {
+              // slap it on the back of the last guy
+              previousMatcher.fuzzyTerm += token.text;
+            } else {
+              // it's its own term
+              matchers.push(makeFuzzyTextMatcher(token.text));
+            }
+            break;
+          case NOT:
+            matchers.push(parseNot());
+            break;
+          case LABEL:
+            matchers.push(parseLabel());
+            break;
+          case QUOTED_THING:
+            if (token.text.length !== 0) {
+              matchers.push(makeExactTextMatcher(token.text));
+            }
+            break;
+          case NORMAL_WORD:
+            matchers.push(makeFuzzyTextMatcher(token.text));
+            break;
+        }
+        var justSawWhitespace = token.type === WHITESPACE;
       }
+      return makeAndMatcher(matchers);
     }
-    switch (type) {
-      case WHITESPACE:
-      case OPEN_PARENTHESIS:
-      case CLOSE_PARENTHESIS:
-      case NOT:
-        tokens.push({type: type, text: term});
-        break;
-      case QUOTED_THING:
-      case NORMAL_WORD:
-        var endParensCount = /\)*$/.exec(term)[0].length;
-        term = term.substr(0, term.length - endParensCount);
-        if (type === QUOTED_THING) {
-          // strip quotes
-          term = /^"(.*)"$/.exec(term)[1];
-          // handle escapes
-          term = term.replace(/\\(.)/g, "$1");
-        }
-        tokens.push({type: type, text: term});
-        for (var i = 0; i < endParensCount; i++) {
-          tokens.push({type: CLOSE_PARENTHESIS, text: ")"});
-        }
-        break;
-    }
-  }
-  return tokens;
-}
 
-function parseQuery(query) {
-  var tokens = tokenizeQuery(query);
-  var tokenIndex = 0;
-  return parseAnd(null);
-
-  function parseAnd(waitForTokenType) {
-    var matchers = [];
-    var justSawWhitespace = true;
-    while (tokenIndex < tokens.length) {
+    function parseNot() {
+      if (tokenIndex >= tokens.length) {
+        // "not:" then EOF. treat it as a fuzzy matcher for "not:"
+        return makeFuzzyTextMatcher(tokens[tokenIndex - 1].text);
+      }
       var token = tokens[tokenIndex++];
       switch (token.type) {
-        case OPEN_PARENTHESIS:
-          var subMatcher = parseAnd(CLOSE_PARENTHESIS);
-          matchers.push(subMatcher);
-          break;
+        case WHITESPACE:
         case CLOSE_PARENTHESIS:
-          if (waitForTokenType === CLOSE_PARENTHESIS) return makeAndMatcher(matchers);
-          // misplaced )
-          var previousMatcher = matchers[matchers.length - 1];
-          if (!justSawWhitespace && previousMatcher != null && previousMatcher.fuzzyTerm != null) {
-            // slap it on the back of the last guy
-            previousMatcher.fuzzyTerm += token.text;
-          } else {
-            // it's its own term
-            matchers.push(makeFuzzyTextMatcher(token.text));
-          }
-          break;
+          // "not: " or "not:)"
+          // Treat the "not:" as a fuzzy matcher,
+          // and let the parent deal with this token
+          tokenIndex--;
+          return makeFuzzyTextMatcher(tokens[tokenIndex - 1].text);
+        case OPEN_PARENTHESIS:
+          // "not:("
+          return makeNotMatcher(parseAnd(CLOSE_PARENTHESIS));
         case NOT:
-          matchers.push(parseNot());
+          // double negative all the way.
+          return makeNotMatcher(parseNot());
+        case LABEL:
+          return makeNotMatcher(parseLabel());
+        case QUOTED_THING:
+          return makeNotMatcher(makeExactTextMatcher(token.text));
+        case NORMAL_WORD:
+          return makeNotMatcher(makeFuzzyTextMatcher(token.text));
+      }
+      throw new Error("unreachable");
+    }
+
+    function parseLabel() {
+      if (tokenIndex >= tokens.length) {
+        // "label:" then EOF. treat it as a fuzzy matcher for "label:"
+        return makeFuzzyTextMatcher(tokens[tokenIndex - 1].text);
+      }
+      var token = tokens[tokenIndex++];
+      switch (token.type) {
+        case WHITESPACE:
+        case CLOSE_PARENTHESIS:
+          // "label: " or "label:)"
+          // Treat the "label:" as a fuzzy matcher,
+          // and let the parent deal with this token
+          tokenIndex--;
+          return makeFuzzyTextMatcher(tokens[tokenIndex - 1].text);
+        case OPEN_PARENTHESIS:
+        case NOT:
+        case LABEL:
+        case QUOTED_THING:
+        case NORMAL_WORD:
+          // "label:(" or "label:not:" or "label:label:" or 'label:"Asdf"' or "label:Asdf"
+          return makeLabelMatcher(token.text);
+      }
+      throw new Error("unreachable");
+    }
+  }
+
+  function makeFuzzyTextMatcher(term) {
+    // make this publicly modifiable
+    fuzzyTextMatcher.fuzzyTerm = formatSearchable(term);;
+    fuzzyTextMatcher.toString = function() {
+      return "(fuzzy " + JSON.stringify(fuzzyTextMatcher.fuzzyTerm) + ")"
+    };
+    return fuzzyTextMatcher;
+    function fuzzyTextMatcher(track) {
+      return track.fuzzySearchTags.indexOf(fuzzyTextMatcher.fuzzyTerm) !== -1;
+    }
+  }
+  function makeExactTextMatcher(term) {
+    exactTextMatcher.toString = function() {
+      return "(exact " + JSON.stringify(term) + ")"
+    };
+    return exactTextMatcher;
+    function exactTextMatcher(track) {
+      return track.exactSearchTags.indexOf(term) !== -1;
+    }
+  }
+  function makeAndMatcher(children) {
+    if (children.length === 1) return children[0];
+    andMatcher.toString = function() {
+      return "(" + children.join(" AND ") + ")";
+    };
+    return andMatcher;
+    function andMatcher(track) {
+      for (var i = 0; i < children.length; i++) {
+        if (!children[i](track)) return false;
+      }
+      return true;
+    }
+  }
+  function makeNotMatcher(subMatcher) {
+    notMatcher.toString = function() {
+      return "(not " + subMatcher.toString() + ")";
+    };
+    return notMatcher;
+    function notMatcher(track) {
+      return !subMatcher(track);
+    }
+  }
+  function makeLabelMatcher(text) {
+    var id = (function() {
+      for (var id in self.labelTable) {
+        if (self.labelTable[id].name === text) {
+          return id;
+        }
+      }
+      return null;
+    })();
+    if (id != null) {
+      labelMatcher.toString = function() {
+        return "(label " + JSON.stringify(id) + ")";
+      };
+      return labelMatcher;
+    } else {
+      // not even a real label
+      alwaysFail.toString = function() {
+        return "(label <none>)";
+      };
+      return alwaysFail;
+    }
+
+    function labelMatcher(track) {
+      return track.labels != null && track.labels[id];
+    }
+    function alwaysFail() {
+      return false;
+    }
+  }
+
+  function tokenizeQuery(query) {
+    tokenizerRegex.lastIndex = 0;
+    var tokens = [];
+    while (true) {
+      var match = tokenizerRegex.exec(query);
+      if (match == null) break;
+      var term = match[0];
+      var type;
+      for (var i = 1; i < match.length; i++) {
+        if (match[i] != null) {
+          type = i;
+          break;
+        }
+      }
+      switch (type) {
+        case WHITESPACE:
+        case OPEN_PARENTHESIS:
+        case CLOSE_PARENTHESIS:
+        case NOT:
+        case LABEL:
+          tokens.push({type: type, text: term});
           break;
         case QUOTED_THING:
-          if (token.text.length !== 0) {
-            matchers.push(makeExactTextMatcher(token.text));
+        case NORMAL_WORD:
+          var endParensCount = /\)*$/.exec(term)[0].length;
+          term = term.substr(0, term.length - endParensCount);
+          if (type === QUOTED_THING) {
+            // strip quotes
+            term = /^"(.*)"$/.exec(term)[1];
+            // handle escapes
+            term = term.replace(/\\(.)/g, "$1");
+          }
+          tokens.push({type: type, text: term});
+          for (var i = 0; i < endParensCount; i++) {
+            tokens.push({type: CLOSE_PARENTHESIS, text: ")"});
           }
           break;
-        case NORMAL_WORD:
-          matchers.push(makeFuzzyTextMatcher(token.text));
-          break;
       }
-      var justSawWhitespace = token.type === WHITESPACE;
     }
-    return makeAndMatcher(matchers);
+    return tokens;
   }
 
-  function parseNot() {
-    if (tokenIndex >= tokens.length) {
-      // "not:" then EOF. treat it as a fuzzy matcher for "not:"
-      return makeFuzzyTextMatcher(tokens[tokenIndex - 1].text);
-    }
-    var token = tokens[tokenIndex++];
-    switch (token.type) {
-      case WHITESPACE:
-      case CLOSE_PARENTHESIS:
-        // "not: " or "not:)"
-        // Treat the "not:" as a fuzzy matcher,
-        // and let the parent deal with this token
-        tokenIndex--;
-        return makeFuzzyTextMatcher(tokens[tokenIndex - 1].text);
-      case OPEN_PARENTHESIS:
-        // "not:("
-        return makeNotMatcher(parseAnd(CLOSE_PARENTHESIS));
-      case NOT:
-        // double negative all the way.
-        return makeNotMatcher(parseNot());
-      case QUOTED_THING:
-        return makeNotMatcher(makeExactTextMatcher(token.text));
-      case NORMAL_WORD:
-        return makeNotMatcher(makeFuzzyTextMatcher(token.text));
-    }
-    throw new Error("unreachable");
-  }
-
-}
+};
 
 function getOrCreate(key, table, initObjFunc) {
   var result = table[key];

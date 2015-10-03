@@ -475,26 +475,59 @@ describe("label management", function() {
 });
 
 describe("parseQuery", function() {
+  var library = new MusicLibraryIndex();
   it("works", function() {
-    assert.strictEqual(MusicLibraryIndex.parseQuery('').toString(), '()');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('a').toString(), '(fuzzy "a")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery(' ab   cd ').toString(), '((fuzzy "ab") AND (fuzzy "cd"))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('"a  b"').toString(), '(exact "a  b")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('"a  b\\" c"').toString(), '(exact "a  b\\\" c")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('\\"a  b"').toString(), '((fuzzy "\\\\\\"a") AND (fuzzy "b\\""))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('"').toString(), '(fuzzy "\\\"")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('\\').toString(), '(fuzzy "\\\\")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('""').toString(), '()');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('a" b"c').toString(), '((fuzzy "a\\\"") AND (fuzzy "b\\\"c"))');
+    assert.strictEqual(library.parseQuery('').toString(), '()');
+    assert.strictEqual(library.parseQuery('a').toString(), '(fuzzy "a")');
+    assert.strictEqual(library.parseQuery(' ab   cd ').toString(), '((fuzzy "ab") AND (fuzzy "cd"))');
+    assert.strictEqual(library.parseQuery('"a  b"').toString(), '(exact "a  b")');
+    assert.strictEqual(library.parseQuery('"a  b\\" c"').toString(), '(exact "a  b\\\" c")');
+    assert.strictEqual(library.parseQuery('\\"a  b"').toString(), '((fuzzy "\\\\\\"a") AND (fuzzy "b\\""))');
+    assert.strictEqual(library.parseQuery('"').toString(), '(fuzzy "\\\"")');
+    assert.strictEqual(library.parseQuery('\\').toString(), '(fuzzy "\\\\")');
+    assert.strictEqual(library.parseQuery('""').toString(), '()');
+    assert.strictEqual(library.parseQuery('a" b"c').toString(), '((fuzzy "a\\\"") AND (fuzzy "b\\\"c"))');
 
-    assert.strictEqual(MusicLibraryIndex.parseQuery('not:A').toString(), '(not (fuzzy "a"))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('not:"A"').toString(), '(not (exact "A"))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('not:(a b)').toString(), '(not ((fuzzy "a") AND (fuzzy "b")))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('not:(a)').toString(), '(not (fuzzy "a"))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('not:not:a').toString(), '(not (not (fuzzy "a")))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('not:').toString(), '(fuzzy "not:")');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('not: a').toString(), '((fuzzy "not:") AND (fuzzy "a"))');
-    assert.strictEqual(MusicLibraryIndex.parseQuery('not:)a').toString(), '((fuzzy "not:)") AND (fuzzy "a"))');
+    assert.strictEqual(library.parseQuery('not:A').toString(), '(not (fuzzy "a"))');
+    assert.strictEqual(library.parseQuery('not:"A"').toString(), '(not (exact "A"))');
+    assert.strictEqual(library.parseQuery('not:(a b)').toString(), '(not ((fuzzy "a") AND (fuzzy "b")))');
+    assert.strictEqual(library.parseQuery('not:(a)').toString(), '(not (fuzzy "a"))');
+    assert.strictEqual(library.parseQuery('not:not:a').toString(), '(not (not (fuzzy "a")))');
+    assert.strictEqual(library.parseQuery('not:').toString(), '(fuzzy "not:")');
+    assert.strictEqual(library.parseQuery('not: a').toString(), '((fuzzy "not:") AND (fuzzy "a"))');
+    assert.strictEqual(library.parseQuery('not:)a').toString(), '((fuzzy "not:)") AND (fuzzy "a"))');
+  });
+});
+
+describe("parseQuery with labels", function() {
+  var library = new MusicLibraryIndex();
+  library.addLabel({
+    id: "techno_id",
+    name: "techno",
+  });
+  library.addLabel({
+    id: "jazz_id",
+    name: "jazz music",
+  });
+  library.addLabel({
+    id: "not_id",
+    name: "not:",
+  });
+  library.rebuildLabels();
+
+  it("works", function() {
+    assert.strictEqual(library.parseQuery('label:techno').toString(), '(label "techno_id")');
+    assert.strictEqual(library.parseQuery('not:label:techno').toString(), '(not (label "techno_id"))');
+    assert.strictEqual(library.parseQuery('label:asdf').toString(), '(label <none>)');
+    assert.strictEqual(library.parseQuery('label:Techno').toString(), '(label <none>)');
+    assert.strictEqual(library.parseQuery('label:"jazz music"').toString(), '(label "jazz_id")');
+    assert.strictEqual(library.parseQuery('label:jazz music').toString(), '((label <none>) AND (fuzzy "music"))');
+    assert.strictEqual(library.parseQuery('label:""').toString(), '(label <none>)');
+
+    assert.strictEqual(library.parseQuery('label:').toString(), '(fuzzy "label:")');
+    assert.strictEqual(library.parseQuery('label: ').toString(), '(fuzzy "label:")');
+    assert.strictEqual(library.parseQuery('label:not:').toString(), '(label "not_id")');
+    assert.strictEqual(library.parseQuery('not:(this label:)').toString(), '(not ((fuzzy "this") AND (fuzzy "label:")))');
   });
 });
 
@@ -584,17 +617,29 @@ describe("searching with quoted seach terms", function() {
 
 describe("searching with expressions", function() {
   var library = new MusicLibraryIndex();
+  library.addLabel({
+    id: "techno_id",
+    name: "techno",
+  });
+  library.addLabel({
+    id: "jazz_id",
+    name: "jazz",
+  });
+  library.rebuildLabels();
+
   library.addTrack({
     key: "fUPmxjMc",
     name: "Été (Original Mix)",
     artistName: "AKA AKA & Thalstroem",
     albumName: "Varieté",
+    labels: {"jazz_id": 1},
   });
   library.addTrack({
     key: "v7zwEPLs",
     name: "Été (Remix)",
     artistName: "Some Remixer",
     albumName: "Varieté",
+    labels: {"techno_id": 1, "jazz_id": 1},
   });
   library.addTrack({
     key: "zyGaKkrU",
@@ -611,5 +656,17 @@ describe("searching with expressions", function() {
     assert.strictEqual(library.search('not:"aka aka"').artistList.length, 3);
     assert.strictEqual(library.search('not:(aka young)').artistList.length, 2);
     assert.strictEqual(library.search('not:').artistList.length, 0);
+  });
+
+  it("'label:'", function () {
+    assert.strictEqual(library.search('label:techno').artistList.length, 1);
+    assert.strictEqual(library.search('label:jazz').artistList.length, 2);
+    assert.strictEqual(library.search('not:label:techno').artistList.length, 2);
+    assert.strictEqual(library.search('"label:techno"').artistList.length, 0);
+    assert.strictEqual(library.search('not:"label:techno"').artistList.length, 3);
+    assert.strictEqual(library.search('label:wrong').artistList.length, 0);
+    assert.strictEqual(library.search('not:label:wrong').artistList.length, 3);
+
+    assert.strictEqual(library.search('not:(label:jazz not:label:techno)').artistList.length, 2);
   });
 });
