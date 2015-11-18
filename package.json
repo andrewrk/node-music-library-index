@@ -9,10 +9,10 @@
   "author": "Andrew Kelley <superjoe30@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "diacritics": "~1.2.2"
+    "diacritics": "~1.2.3"
   },
   "devDependencies": {
-    "mocha": "~2.3.3"
+    "mocha": "~2.3.4"
   },
   "repository": {
     "type": "git",
