@@ -28,6 +28,8 @@ This module is used both in the client and the server of
    * Terms starting with `not:` match anything not matched by the rest of the term.
      For example `metal not:metalica` or `just not:"Justin Bieber"`.
    * Parentheses can be used to group terms. For example `tool not:(opiate live)`.
+   * Use `or:(...)` to match any of the terms in the parentheses. For example `or:(chopin mozart bach)`.
+     Use further nested parentheses to return to "and"-style matching. For example `or:(chopin mozart (johann sebastian bach))`.
 
 ## Usage
 

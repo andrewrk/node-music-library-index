@@ -305,17 +305,19 @@ var tokenizerRegex = new RegExp(
   '(\\()'                       +'|'+ // 2: open parenthesis at the start of a term
   '(\\))'                       +'|'+ // 3: end parenthesis
   '(not:)'                      +'|'+ // 4: not: prefix
-  '(label:)'                    +'|'+ // 5: label: prefix
-  '("(?:[^"\\\\]|\\\\.)*"\\)*)' +'|'+ // 6: quoted thing. can end with parentheses
-  '([^ ]+)',                          // 7: normal word. can end with parentheses
+  '(or:\\()'                    +'|'+ // 5: or: prefix
+  '(label:)'                    +'|'+ // 6: label: prefix
+  '("(?:[^"\\\\]|\\\\.)*"\\)*)' +'|'+ // 7: quoted thing. can end with parentheses
+  '([^ ]+)',                          // 8: normal word. can end with parentheses
   "g");
 var WHITESPACE = 1;
 var OPEN_PARENTHESIS = 2;
 var CLOSE_PARENTHESIS = 3;
 var NOT = 4;
-var LABEL = 5;
-var QUOTED_THING = 6;
-var NORMAL_WORD = 7;
+var OR = 5;
+var LABEL = 6;
+var QUOTED_THING = 7;
+var NORMAL_WORD = 8;
 MusicLibraryIndex.prototype.parseQuery = function(query) {
   var self = this;
   return parse(query);
@@ -323,20 +325,20 @@ MusicLibraryIndex.prototype.parseQuery = function(query) {
   function parse(query) {
     var tokens = tokenizeQuery(query);
     var tokenIndex = 0;
-    return parseAnd(null);
+    return parseList(makeAndMatcher, null);
 
-    function parseAnd(waitForTokenType) {
+    function parseList(makeMatcher, waitForTokenType) {
       var matchers = [];
       var justSawWhitespace = true;
       while (tokenIndex < tokens.length) {
         var token = tokens[tokenIndex++];
         switch (token.type) {
           case OPEN_PARENTHESIS:
-            var subMatcher = parseAnd(CLOSE_PARENTHESIS);
+            var subMatcher = parseList(makeAndMatcher, CLOSE_PARENTHESIS);
             matchers.push(subMatcher);
             break;
           case CLOSE_PARENTHESIS:
-            if (waitForTokenType === CLOSE_PARENTHESIS) return makeAndMatcher(matchers);
+            if (waitForTokenType === CLOSE_PARENTHESIS) return makeMatcher(matchers);
             // misplaced )
             var previousMatcher = matchers[matchers.length - 1];
             if (!justSawWhitespace && previousMatcher != null && previousMatcher.fuzzyTerm != null) {
@@ -349,6 +351,10 @@ MusicLibraryIndex.prototype.parseQuery = function(query) {
             break;
           case NOT:
             matchers.push(parseNot());
+            break;
+          case OR:
+            var subMatcher = parseList(makeOrMatcher, CLOSE_PARENTHESIS);
+            matchers.push(subMatcher);
             break;
           case LABEL:
             matchers.push(parseLabel());
@@ -364,7 +370,7 @@ MusicLibraryIndex.prototype.parseQuery = function(query) {
         }
         var justSawWhitespace = token.type === WHITESPACE;
       }
-      return makeAndMatcher(matchers);
+      return makeMatcher(matchers);
     }
 
     function parseNot() {
@@ -383,10 +389,13 @@ MusicLibraryIndex.prototype.parseQuery = function(query) {
           return makeFuzzyTextMatcher(tokens[tokenIndex - 1].text);
         case OPEN_PARENTHESIS:
           // "not:("
-          return makeNotMatcher(parseAnd(CLOSE_PARENTHESIS));
+          return makeNotMatcher(parseList(makeAndMatcher, CLOSE_PARENTHESIS));
         case NOT:
           // double negative all the way.
           return makeNotMatcher(parseNot());
+        case OR:
+          // "not:or("
+          return makeNotMatcher(parseList(makeOrMatcher, CLOSE_PARENTHESIS));
         case LABEL:
           return makeNotMatcher(parseLabel());
         case QUOTED_THING:
@@ -411,12 +420,12 @@ MusicLibraryIndex.prototype.parseQuery = function(query) {
           // and let the parent deal with this token
           tokenIndex--;
           return makeFuzzyTextMatcher(tokens[tokenIndex - 1].text);
-        case OPEN_PARENTHESIS:
-        case NOT:
-        case LABEL:
-        case QUOTED_THING:
-        case NORMAL_WORD:
-          // "label:(" or "label:not:" or "label:label:" or 'label:"Asdf"' or "label:Asdf"
+        case OPEN_PARENTHESIS: // "label:("
+        case NOT:              // "label:not:"
+        case OR:               // "label:or:("
+        case LABEL:            // "label:label:"
+        case QUOTED_THING:     // 'label:"Asdf"'
+        case NORMAL_WORD:      // "label:Asdf"
           return makeLabelMatcher(token.text);
       }
       throw new Error("unreachable");
@@ -454,6 +463,19 @@ MusicLibraryIndex.prototype.parseQuery = function(query) {
         if (!children[i](track)) return false;
       }
       return true;
+    }
+  }
+  function makeOrMatcher(children) {
+    if (children.length === 1) return children[0];
+    orMatcher.toString = function() {
+      return "(" + children.join(" OR ") + ")";
+    };
+    return orMatcher;
+    function orMatcher(track) {
+      for (var i = 0; i < children.length; i++) {
+        if (children[i](track)) return true;
+      }
+      return false;
     }
   }
   function makeNotMatcher(subMatcher) {
@@ -514,6 +536,7 @@ MusicLibraryIndex.prototype.parseQuery = function(query) {
         case OPEN_PARENTHESIS:
         case CLOSE_PARENTHESIS:
         case NOT:
+        case OR:
         case LABEL:
           tokens.push({type: type, text: term});
           break;

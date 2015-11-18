@@ -496,6 +496,16 @@ describe("parseQuery", function() {
     assert.strictEqual(library.parseQuery('not:').toString(), '(fuzzy "not:")');
     assert.strictEqual(library.parseQuery('not: a').toString(), '((fuzzy "not:") AND (fuzzy "a"))');
     assert.strictEqual(library.parseQuery('not:)a').toString(), '((fuzzy "not:)") AND (fuzzy "a"))');
+
+    assert.strictEqual(library.parseQuery('or:()').toString(), '()');
+    assert.strictEqual(library.parseQuery('or:(' ).toString(), '()');
+    assert.strictEqual(library.parseQuery('or:').toString(), '(fuzzy "or:")');
+    assert.strictEqual(library.parseQuery('or:(a)').toString(), '(fuzzy "a")');
+    assert.strictEqual(library.parseQuery('or:(a' ).toString(), '(fuzzy "a")');
+    assert.strictEqual(library.parseQuery('or:(a b)').toString(), '((fuzzy "a") OR (fuzzy "b"))');
+    assert.strictEqual(library.parseQuery('or:(a b' ).toString(), '((fuzzy "a") OR (fuzzy "b"))');
+    assert.strictEqual(library.parseQuery('or:(a (b c))').toString(), '((fuzzy "a") OR ((fuzzy "b") AND (fuzzy "c")))');
+    assert.strictEqual(library.parseQuery('or:((a b) c)').toString(), '(((fuzzy "a") AND (fuzzy "b")) OR (fuzzy "c"))');
   });
 });
 
@@ -658,7 +668,7 @@ describe("searching with expressions", function() {
     assert.strictEqual(library.search('not:').artistList.length, 0);
   });
 
-  it("'label:'", function () {
+  it("'label:'", function() {
     assert.strictEqual(library.search('label:techno').artistList.length, 1);
     assert.strictEqual(library.search('label:jazz').artistList.length, 2);
     assert.strictEqual(library.search('not:label:techno').artistList.length, 2);
@@ -668,5 +678,12 @@ describe("searching with expressions", function() {
     assert.strictEqual(library.search('not:label:wrong').artistList.length, 3);
 
     assert.strictEqual(library.search('not:(label:jazz not:label:techno)').artistList.length, 2);
+  });
+
+  it("'or:'", function() {
+    assert.strictEqual(library.search('or:()').artistList.length, 0);
+    assert.strictEqual(library.search('or:(aka)').artistList.length, 2);
+    assert.strictEqual(library.search('or:(variete)').artistList.length, 2);
+    assert.strictEqual(library.search('or:(label:techno not:label:jazz)').artistList.length, 2);
   });
 });
